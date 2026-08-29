@@ -54,7 +54,8 @@ html, body {
   border: 1px solid var(--accent); color: var(--accent); font-weight: 700; font-size: .95rem;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
 }
-.brand small { display: block; color: var(--accent); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.brand strong { letter-spacing: .22em; text-transform: uppercase; }
+.brand small { display: block; color: var(--accent); font-size: .68rem; letter-spacing: .22em; text-transform: uppercase; }
 nav { display: flex; gap: 1rem; flex: 1; }
 nav a { color: var(--muted); text-decoration: none; font-size: .9rem; }
 nav a:hover { color: var(--text); }
@@ -63,23 +64,31 @@ nav a:hover { color: var(--text); }
   border: 1px solid var(--warn); padding: .25rem .5rem;
 }
 main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; position: relative; z-index: 1; }
+.hero { text-align: center; }
 .hero h1 {
-  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-size: clamp(2rem, 8vw, 4.2rem);
   line-height: 1.05;
-  margin: .35rem 0 .2rem;
-  letter-spacing: .04em;
+  margin: .5rem 0 .15rem;
+  letter-spacing: .42em;
+  text-transform: uppercase;
+  text-indent: .42em;
   text-shadow: 0 2px 18px #000;
 }
 .subbrand {
-  margin: 0 0 1rem;
+  margin: .35rem auto 1.2rem;
+  max-width: 42rem;
   color: var(--accent);
-  letter-spacing: .18em;
+  letter-spacing: .38em;
+  text-indent: .38em;
   text-transform: uppercase;
-  font-size: .85rem;
+  font-size: clamp(.72rem, 2.2vw, .95rem);
+  padding: .55rem 0;
+  border-top: 1px solid rgba(212,160,23,.45);
+  border-bottom: 1px solid rgba(212,160,23,.45);
 }
-.kicker { color: var(--accent); text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; }
+.kicker { color: var(--accent); text-transform: uppercase; letter-spacing: .28em; font-size: .72rem; }
 .lead, .panel p { color: var(--muted); line-height: 1.55; }
-.cta-row { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.4rem; }
+.cta-row { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.4rem; justify-content: center; }
 .btn {
   border: 1px solid var(--line); background: var(--panel); color: var(--text);
   padding: .7rem 1rem; cursor: pointer; font: inherit;
@@ -96,7 +105,7 @@ main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; position: 
 .estado.futura, .estado.en_implementacion { color: var(--warn); }
 .om-grid { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .note { font-size: .9rem; }
-footer { position: relative; z-index: 1; border-top: 1px solid var(--line); padding: 1.2rem; color: var(--muted); font-size: .8rem; text-align: center; background: rgba(5,7,11,.75); }
+footer { position: relative; z-index: 1; border-top: 1px solid var(--line); padding: 1.2rem; color: var(--muted); font-size: .8rem; text-align: center; background: rgba(5,7,11,.75); letter-spacing: .16em; text-transform: uppercase; }
 #av-agent { position: fixed; right: 1rem; bottom: 1rem; z-index: 40; }
 .av-toggle {
   min-width: 56px; height: 56px; padding: 0 .9rem; border-radius: 999px;

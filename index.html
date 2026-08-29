@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Aerovolt — Agentes virtuales HMO</title>
-  <meta name="description" content="Aerovolt — Agentes virtuales HMO. Command, O&M y agente comercial. Fase TEST." />
+  <meta name="description" content="Aerovolt HMO. Chatbot IA PyME / Starter. Fase TEST." />
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="locked">
+<body>
   <div class="grid-bg"></div>
   <header class="top">
     <div class="brand">
@@ -18,73 +18,63 @@
       </div>
     </div>
     <nav>
-      <a href="#hmo">HMO</a>
+      <a href="#bienvenida">Inicio</a>
+      <a href="#starter">Starter</a>
       <a href="#command">Command</a>
-      <a href="#om">O&amp;M</a>
-      <a href="#paquetes">Alcance</a>
+      <a href="#om">O&M</a>
+      <a href="command.html">Command operador</a>
     </nav>
     <span class="badge">FASE TEST</span>
   </header>
 
   <main>
-    <section class="hero">
-      <p class="kicker">Intelligence that connects your business</p>
+    <section class="hero" id="bienvenida">
+      <p class="kicker">Primeros clientes · fase TEST</p>
       <h1>Aerovolt</h1>
       <p class="subbrand">Agentes virtuales HMO</p>
       <p class="lead">
-        HMO es el frente comercial y operativo: saluda, explica Command,
-        toma solicitudes de demo y alcance, y no inventa precios. Fase TEST.
-        Sin cobro automático, dron, SCADA ni satélite en vivo.
+        Entran a una plataforma de tecnología, automatización, monitoreo e inteligencia operativa.
+        HMO recibe, recomienda el plan configurado y registra la solicitud. No inventa capacidades en vivo.
       </p>
       <div class="cta-row">
-        <button type="button" class="btn primary" data-open-agent="hola">Hablar con HMO</button>
-        <button type="button" class="btn ghost" data-open-agent="demo">Agendar demostración</button>
-        <button type="button" class="btn ghost" data-open-agent="cotizacion">Solicitar alcance</button>
+        <a class="btn primary" href="#starter">Conocer nuestros servicios</a>
+        <button type="button" class="btn primary" data-open-agent="starter">Solicitar una demostración</button>
+        <button type="button" class="btn ghost" data-open-agent="hola">Hablar con Aerovolt</button>
       </div>
     </section>
 
-    <section id="hmo" class="panel">
-      <h2>HMO</h2>
-      <p>Human + Machine Operations. Un agente que vende solo lo configurado y deja la decisión económica a un humano.</p>
+    <section id="starter" class="panel">
+      <h2>Chatbot IA PyME / Starter</h2>
+      <p class="note">Precio regular: $2,500 MXN/mes. Promoción 3 días: contratación $1,800 MXN. Los $500 son abonos al saldo de esa contratación, no la mensualidad permanente.</p>
       <div class="om-grid">
         <article>
-          <h3>Qué hace hoy</h3>
-          <p>Demo de Command, captura de necesidad, solicitud de cotización. Respuestas en este sitio (navegador).</p>
+          <h3>Pagas ahora</h3>
+          <p>Anticipo 40%: <strong>$720 MXN</strong></p>
         </article>
         <article>
-          <h3>Qué no hace aún</h3>
-          <p>No cobra (Stripe HITL). No llama (Vapi sin prueba). No publica tarifas.</p>
+          <h3>Saldo</h3>
+          <p>$1,080 MXN en $500 + $500 + $80. Total promo: $1,800.</p>
         </article>
         <article>
-          <h3>Cómo abrirlo</h3>
-          <p>Botón <strong>HMO</strong> abajo a la derecha, o “Hablar con HMO” arriba.</p>
+          <h3>Después de la promo</h3>
+          <p>Lista regular: $2,500 MXN/mes. Stripe aún no cobra solo en esta página.</p>
         </article>
+      </div>
+      <div class="cta-row">
+        <button type="button" class="btn primary" data-open-agent="pagar_anticipo">Pagar anticipo $720 MXN</button>
+        <button type="button" class="btn ghost" data-open-agent="starter">Que HMO lo explique</button>
       </div>
     </section>
 
     <section id="command" class="panel">
       <h2>AEROVOLT Command</h2>
-      <p>Orquestación Brayan → Command → Ayla / Lesly / Grok. Los agentes preparan; no cobran solos.</p>
+      <p>Orquestación humana. Los agentes preparan; no cobran solos. Vista operador: <a href="command.html">command.html</a> (código HMO-COMMAND).</p>
       <ul class="cards" id="caps"></ul>
     </section>
 
     <section id="om" class="panel">
-      <h2>O&amp;M fotovoltaico</h2>
-      <p>Expediente planta → activo → inspección <em>declarada</em>. Evidencia y campo se habilitan con autorización humana.</p>
-      <div class="om-grid">
-        <article>
-          <h3>Levantamiento</h3>
-          <p>Registro inicial de planta y activos. Estado: en implementación operativa.</p>
-        </article>
-        <article>
-          <h3>Historial</h3>
-          <p>Comparativo sobre datos que sí estén cargados. Sin feed industrial conectado.</p>
-        </article>
-        <article>
-          <h3>Supervisión</h3>
-          <p>Recurrente cuando exista fuente autorizada. Hoy: bitácora TEST.</p>
-        </article>
-      </div>
+      <h2>O&M fotovoltaico</h2>
+      <p>Expediente planta → activo → inspección declarada. Dron, SCADA y térmica: capacidades futuras o en implementación.</p>
     </section>
 
     <section id="paquetes" class="panel">
@@ -95,8 +85,8 @@
   </main>
 
   <footer>
-    <p>Aerovolt</p>
-    <p>Agentes virtuales HMO · fase TEST · acceso controlado</p>
+    <p>Aerovolt · Agentes virtuales HMO · fase TEST</p>
+    <p>GitHub Pages no ejecuta el servidor Node. El anticipo se registra aquí; el cobro Stripe queda pendiente de clave en hosting.</p>
   </footer>
 
   <script src="access.js"></script>

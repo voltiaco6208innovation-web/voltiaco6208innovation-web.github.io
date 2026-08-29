@@ -1,2 +1,7 @@
-# voltiaco6208innovation-web.github.io
-Aerovolt.IA HMO — sitio público fase TEST (Command + O&amp;M + agente H-MO)
+# Aerovolt.IA HMO — sitio público (TEST)
+
+Landing estática + agente H-MO en el navegador.
+
+URL esperada: https://voltiaco6208innovation-web.github.io/
+
+Si no carga: Settings → Pages → Deploy from branch `main` / root.

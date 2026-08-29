@@ -3,41 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Aerovolt.IA — Command HMO · fase TEST</title>
-  <meta name="description" content="Aerovolt.IA HMO — Command, O&M y agente comercial. Fase TEST. Sin cobro automático ni operación de campo en vivo." />
+  <title>Aerovolt.IA — Agentes virtuales HMO</title>
+  <meta name="description" content="Aerovolt.IA — Agentes virtuales HMO. Command, O&M y agente comercial. Fase TEST." />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="grid-bg"></div>
   <header class="top">
     <div class="brand">
-      <span class="mark">AV</span>
+      <span class="mark">A</span>
       <div>
-        <strong>Aerovolt.IA</strong>
-        <small>Command · O&amp;M · H-MO</small>
+        <strong>aerovolt.ia</strong>
+        <small>Agentes virtuales HMO</small>
       </div>
     </div>
     <nav>
+      <a href="#hmo">HMO</a>
       <a href="#command">Command</a>
       <a href="#om">O&amp;M</a>
       <a href="#paquetes">Alcance</a>
-      <a href="#agente">Agente</a>
     </nav>
     <span class="badge">FASE TEST</span>
   </header>
 
   <main>
     <section class="hero">
-      <p class="kicker">Plataforma multiagente operativa · México</p>
-      <h1>Command para operación energética.<br />Sin declarar lo que aún no está en vivo.</h1>
+      <p class="kicker">Intelligence that connects your business</p>
+      <h1>Agentes virtuales <em>HMO</em></h1>
       <p class="lead">
-        Sitio de bienvenida a primeros prospectos, expediente O&amp;M en modo TEST
-        y agente comercial H-MO. No hay tarifas publicadas, cobro confirmado,
-        dron, SCADA ni satélite en vivo.
+        HMO es el frente comercial y operativo de Aerovolt.IA: saluda, explica Command,
+        toma solicitudes de demo y alcance, y no inventa precios. Fase TEST.
+        Sin cobro automático, dron, SCADA ni satélite en vivo.
       </p>
       <div class="cta-row">
-        <button type="button" class="btn primary" data-open-agent="demo">Agendar demostración</button>
+        <button type="button" class="btn primary" data-open-agent="hola">Hablar con HMO</button>
+        <button type="button" class="btn ghost" data-open-agent="demo">Agendar demostración</button>
         <button type="button" class="btn ghost" data-open-agent="cotizacion">Solicitar alcance</button>
+      </div>
+    </section>
+
+    <section id="hmo" class="panel">
+      <h2>HMO</h2>
+      <p>Human + Machine Operations. Un agente que vende solo lo configurado y deja la decisión económica a un humano.</p>
+      <div class="om-grid">
+        <article>
+          <h3>Qué hace hoy</h3>
+          <p>Demo de Command, captura de necesidad, solicitud de cotización. Respuestas en este sitio (navegador).</p>
+        </article>
+        <article>
+          <h3>Qué no hace aún</h3>
+          <p>No cobra (Stripe HITL). No llama (Vapi sin prueba). No publica tarifas.</p>
+        </article>
+        <article>
+          <h3>Cómo abrirlo</h3>
+          <p>Botón <strong>HMO</strong> abajo a la derecha, o “Hablar con HMO” arriba.</p>
+        </article>
       </div>
     </section>
 
@@ -71,16 +91,11 @@
       <p class="note" id="precio-nota"></p>
       <ul class="cards packages" id="packs"></ul>
     </section>
-
-    <section id="agente" class="panel">
-      <h2>Agente comercial H-MO</h2>
-      <p>Vende solo lo configurado. Abre el panel H-MO (esquina) o usa los botones de esta página.</p>
-    </section>
   </main>
 
   <footer>
-    <p>Aerovolt.IA · fase TEST · propietario: Brayan · repo web: aerovolt-web</p>
-    <p>Este sitio es estático (GitHub Pages). El cobro Stripe y Vapi quedan fuera hasta keys comprobadas.</p>
+    <p>Agentes virtuales HMO · aerovolt.ia · fase TEST</p>
+    <p>Sitio estático. Stripe y Vapi fuera hasta keys comprobadas. Sin logos de terceros como partners.</p>
   </footer>
 
   <script src="agent.js"></script>

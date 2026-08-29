@@ -1,7 +1,7 @@
 (function () {
   const CATALOGO = {
     nota_precios:
-      "En la configuración de Aerovolt no hay tarifas numéricas publicadas. El agente comercial no inventa montos. Toda contratación económica se registra como solicitud o cotización hasta autorización humana.",
+      "En la configuración de Aerovolt no hay tarifas numéricas publicadas. HMO no inventa montos. Toda contratación económica se registra como solicitud o cotización hasta autorización humana.",
     paquetes: [
       { id: "demo_plataforma", nombre: "Demostración de plataforma", estado: "disponible", precio_etiqueta: "Sin tarifa publicada · se agenda demostración", cta: "demo" },
       { id: "solicitud_alcance", nombre: "Solicitud de alcance y cotización", estado: "disponible", precio_etiqueta: "Cotización autorizada · sin precio en catálogo", cta: "cotizacion" },
@@ -9,7 +9,7 @@
       { id: "om_recurrente", nombre: "O&M recurrente — plataforma + historial", estado: "en_implementacion", precio_etiqueta: "Servicio recurrente no tarifado en catálogo", cta: "cotizacion" }
     ],
     capacidades: [
-      { id: "ia", nombre: "IA y automatización", estado: "disponible", nota: "Orquestación y bitácora locales. Agentes preparan; no cobran solos." },
+      { id: "ia", nombre: "IA y automatización", estado: "disponible", nota: "Orquestación y bitácora locales. HMO y Command preparan; no cobran solos." },
       { id: "omni", nombre: "Atención omnicanal", estado: "en_implementacion", nota: "Webhook Meta preparado. Sin prueba en vivo." },
       { id: "voz", nombre: "Voz con IA (Vapi)", estado: "en_implementacion", nota: "Conector preparado. Sin llamada comprobada." },
       { id: "monitoreo", nombre: "Monitoreo y logística O&M", estado: "disponible", nota: "Expediente local de activos e inspecciones declaradas." },
@@ -30,19 +30,19 @@
   }
   if (packs) {
     packs.innerHTML = CATALOGO.paquetes.map((p) =>
-      `<li><span class="estado ${p.estado}">${p.estado.replace("_", " ")}</span><h3>${p.nombre}</h3><p>${p.precio_etiqueta}</p><button type="button" class="btn ghost" data-open-agent="${p.cta}">Pedir</button></li>`
+      `<li><span class="estado ${p.estado}">${p.estado.replace("_", " ")}</span><h3>${p.nombre}</h3><p>${p.precio_etiqueta}</p><button type="button" class="btn ghost" data-open-agent="${p.cta}">Pedir a HMO</button></li>`
     ).join("");
   }
 
   const root = document.createElement("div");
   root.id = "av-agent";
   root.innerHTML = `
-    <button type="button" class="av-toggle" aria-label="Abrir agente comercial">H-MO</button>
+    <button type="button" class="av-toggle" aria-label="Abrir HMO">HMO</button>
     <section class="av-panel" hidden>
-      <header><strong>Agente comercial H-MO</strong><small>Vende solo lo configurado · fase TEST · sin API de servidor</small></header>
+      <header><strong>HMO</strong><small>Agentes virtuales HMO · vende solo lo configurado · fase TEST</small></header>
       <div class="av-log" id="av-log"></div>
       <div class="av-actions" id="av-actions"></div>
-      <form id="av-form"><input id="av-input" autocomplete="off" placeholder="Escribe tu necesidad…" /><button type="submit">Enviar</button></form>
+      <form id="av-form"><input id="av-input" autocomplete="off" placeholder="Escribe a HMO…" /><button type="submit">Enviar</button></form>
     </section>`;
   document.body.appendChild(root);
 
@@ -83,22 +83,25 @@
       { id: "cotizacion", label: "Pedir cotización" },
       { id: "om", label: "Hablar de O&M" }
     ];
+    if (t.includes("hmo") || t === "hola") {
+      return reply("Soy HMO, agente virtual de Aerovolt.IA. Puedo agendar una demo de Command o tomar una solicitud de alcance. No publico tarifas ni cobro solo.", actions);
+    }
     if (t.includes("demo")) {
-      return reply("Puedo registrar una solicitud de demostración de Command. En TEST no hay calendario en vivo: un humano confirma horario. No hay tarifa publicada.", actions);
+      return reply("HMO puede registrar una solicitud de demostración de Command. En TEST un humano confirma horario. No hay tarifa publicada.", actions);
     }
     if (t.includes("cotiz") || t.includes("precio") || t.includes("cuanto") || t.includes("cuesta")) {
       return reply(CATALOGO.nota_precios, actions);
     }
     if (t.includes("om") || t.includes("o&m") || t.includes("planta") || t.includes("solar")) {
-      return reply("O&M está en implementación: expediente de planta y activos sí; inspección de campo, dron y SCADA no están conectados. Puedo dejar una solicitud de alcance.", actions);
+      return reply("O&M está en implementación: expediente sí; campo, dron y SCADA no conectados. HMO deja la solicitud de alcance.", actions);
     }
     if (t.includes("vapi") || t.includes("voz") || t.includes("llamar")) {
-      return reply("Vapi está preparado en configuración, sin llamada comprobada ni número publicado en este sitio.", actions);
+      return reply("Vapi está preparado en configuración. HMO aún no hace llamadas comprobadas.", actions);
     }
     if (t.includes("stripe") || t.includes("pagar") || t.includes("cobro")) {
-      return reply("Stripe checkout no está habilitado. El cobro queda en cola hasta autorización humana.", actions);
+      return reply("Stripe checkout no está habilitado. HMO deja el cobro en cola hasta autorización humana.", actions);
     }
-    return reply("Aerovolt.IA HMO, fase TEST. Puedo orientar sobre demo, alcance o O&M. No invento montos ni declaro operación en vivo.", actions);
+    return reply("HMO · Aerovolt.IA · fase TEST. Demo, alcance u O&M. Sin montos inventados ni operación en vivo declarada.", actions);
   }
 
   toggle.addEventListener("click", () => {

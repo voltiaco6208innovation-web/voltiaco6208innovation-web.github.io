@@ -1,28 +1,52 @@
 :root {
-  --bg: #070b10;
-  --panel: #0e1620;
-  --line: #1c2a3a;
+  --bg: #05070b;
+  --panel: rgba(8,12,18,.82);
+  --line: rgba(212,160,23,.38);
   --text: #e8eef6;
-  --muted: #8ea0b5;
+  --muted: #b7c3d4;
   --accent: #d4a017;
   --mint: #3ee0b0;
   --warn: #e6c15a;
   --font: "Segoe UI", system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+html, body {
+  margin: 0;
+  min-height: 100%;
+  color: var(--text);
+  font-family: var(--font);
+  background: #05070b;
+}
 .grid-bg {
-  position: fixed; inset: 0; pointer-events: none; opacity: .22;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #05070b;
   background-image:
-    linear-gradient(#1c2a3a 1px, transparent 1px),
-    linear-gradient(90deg, #1c2a3a 1px, transparent 1px);
-  background-size: 48px 48px;
+    radial-gradient(ellipse 70% 55% at 50% 38%, rgba(212,160,23,.16), transparent 62%),
+    radial-gradient(circle at 18% 22%, rgba(60,140,255,.08), transparent 28%),
+    radial-gradient(circle at 82% 24%, rgba(60,140,255,.08), transparent 26%),
+    linear-gradient(rgba(212,160,23,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,160,23,.07) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(5,7,11,.2), rgba(5,7,11,.88));
+  background-size: auto, auto, auto, 56px 56px, 56px 56px, auto;
+}
+.grid-bg::after {
+  content: "";
+  position: absolute;
+  inset: 12% 18% 38%;
+  border: 1px solid rgba(212,160,23,.18);
+  border-radius: 50%;
+  box-shadow: 0 0 80px rgba(212,160,23,.12) inset;
 }
 .top {
   position: sticky; top: 0; z-index: 10;
   display: flex; align-items: center; gap: 1.5rem;
-  padding: .9rem 1.4rem; background: rgba(7,11,16,.92);
+  padding: .9rem 1.4rem;
+  background: rgba(7,11,16,.86);
   border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
 }
 .brand { display: flex; align-items: center; gap: .7rem; }
 .mark {
@@ -38,8 +62,8 @@ nav a:hover { color: var(--text); }
   font-size: .7rem; letter-spacing: .08em; color: var(--warn);
   border: 1px solid var(--warn); padding: .25rem .5rem;
 }
-main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; position: relative; }
-.hero h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); line-height: 1.15; margin: .4rem 0 1rem; }
+main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; position: relative; z-index: 1; }
+.hero h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); line-height: 1.15; margin: .4rem 0 1rem; text-shadow: 0 2px 18px #000; }
 .hero h1 em { font-style: normal; color: var(--accent); }
 .kicker { color: var(--accent); text-transform: uppercase; letter-spacing: .12em; font-size: .72rem; }
 .lead, .panel p { color: var(--muted); line-height: 1.55; }
@@ -53,23 +77,23 @@ main { max-width: 980px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; position: 
 .cards { list-style: none; padding: 0; display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .cards li, .om-grid article {
   background: var(--panel); border: 1px solid var(--line); padding: 1rem;
+  backdrop-filter: blur(6px);
 }
 .cards h3, .om-grid h3 { margin: 0 0 .35rem; font-size: 1rem; }
 .estado { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--mint); }
 .estado.futura, .estado.en_implementacion { color: var(--warn); }
 .om-grid { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .note { font-size: .9rem; }
-footer { border-top: 1px solid var(--line); padding: 1.2rem; color: var(--muted); font-size: .8rem; text-align: center; }
-
+footer { position: relative; z-index: 1; border-top: 1px solid var(--line); padding: 1.2rem; color: var(--muted); font-size: .8rem; text-align: center; background: rgba(5,7,11,.75); }
 #av-agent { position: fixed; right: 1rem; bottom: 1rem; z-index: 40; }
 .av-toggle {
   min-width: 56px; height: 56px; padding: 0 .9rem; border-radius: 999px;
-  border: 1px solid var(--accent); background: var(--bg); color: var(--accent);
+  border: 1px solid var(--accent); background: rgba(5,7,11,.9); color: var(--accent);
   font-weight: 700; letter-spacing: .06em; cursor: pointer;
 }
 .av-panel {
   position: absolute; right: 0; bottom: 68px; width: min(360px, calc(100vw - 2rem));
-  background: var(--panel); border: 1px solid var(--line); display: flex; flex-direction: column;
+  background: rgba(8,12,18,.94); border: 1px solid var(--line); display: flex; flex-direction: column;
   max-height: 70vh;
 }
 .av-panel[hidden] { display: none; }

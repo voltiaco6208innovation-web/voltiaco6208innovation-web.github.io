@@ -1,4 +1,21 @@
 (function () {
+  const header = document.querySelector(".top");
+  const toggle = document.querySelector(".nav-toggle");
+  if (header && toggle) {
+    toggle.addEventListener("click", function () {
+      const open = header.classList.toggle("nav-open");
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      toggle.setAttribute("aria-label", open ? "Cerrar menú" : "Abrir menú");
+    });
+    header.querySelectorAll("nav a").forEach(function (a) {
+      a.addEventListener("click", function () {
+        header.classList.remove("nav-open");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Abrir menú");
+      });
+    });
+  }
+
   if (!document.body.hasAttribute("data-require-access")) return;
 
   const KEY = "aerovolt_access";

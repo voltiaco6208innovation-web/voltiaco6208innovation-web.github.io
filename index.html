@@ -1,1 +1,719 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT.IA | Agentes Virtuales & Automatización</title>
+  <meta name="description" content="Inteligencia artificial, automatización y marketing para tu negocio. Agentes virtuales 24/7, WhatsApp y voz IA." />
+  <link rel="canonical" href="https://voltiaco6208innovation-web.github.io/" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="logo.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#05070d" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #05070d;
+      --bg-2: #0a0f1a;
+      --card: rgba(12, 18, 32, 0.75);
+      --border: rgba(0, 229, 255, 0.18);
+      --cyan: #00e5ff;
+      --purple: #b14cff;
+      --green: #00ff9d;
+      --gold: #f5c542;
+      --text: #e8f0ff;
+      --muted: #8b9bb8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px;
+      background: rgba(5, 7, 13, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700; font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      color: var(--cyan);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .logo span { color: #fff; }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #000; font-weight: 700; font-size: 0.85rem;
+      padding: 10px 18px; border-radius: 999px;
+      text-decoration: none; border: none; cursor: pointer;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 100px 20px 60px;
+      overflow: hidden;
+    }
+    #canvas-container {
+      position: absolute; inset: 0; z-index: 0;
+      opacity: 0.9;
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 820px;
+    }
+    .hero h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.6rem, 5vw, 2.8rem);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 18px;
+      background: linear-gradient(90deg, #fff, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      color: var(--muted);
+      max-width: 620px;
+      margin: 0 auto 32px;
+    }
+    .hero-buttons {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      justify-content: center;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan), #00b8d4);
+      color: #001018; font-weight: 700;
+      padding: 14px 28px; border-radius: 12px;
+      border: none; cursor: pointer; font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0, 229, 255, 0.35);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+      text-decoration: none; display: inline-block;
+      padding: 14px 28px; border-radius: 12px;
+      font-weight: 600; cursor: pointer; font-size: 1rem;
+    }
+
+    section { padding: 80px 20px; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.4rem, 3.5vw, 2rem);
+      text-align: center; margin-bottom: 12px;
+    }
+    .section-sub {
+      text-align: center; color: var(--muted);
+      max-width: 560px; margin: 0 auto 48px;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: stretch;
+    }
+    @media (max-width: 800px) {
+      .demo-grid { grid-template-columns: 1fr; }
+    }
+    .chat-mock {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      min-height: 380px;
+      display: flex; flex-direction: column;
+    }
+    .chat-header {
+      display: flex; align-items: center; gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .chat-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #000;
+    }
+    .chat-messages {
+      flex: 1; overflow: hidden;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      animation: fadeIn 0.4s ease;
+    }
+    .msg.in {
+      background: rgba(0, 229, 255, 0.12);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .msg.out {
+      background: rgba(177, 76, 255, 0.18);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .voice-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      gap: 20px;
+    }
+    .voice-btn {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #00ffd5, #0088ff);
+      border: 3px solid rgba(255,255,255,0.25);
+      color: #001018;
+      font-size: 2rem;
+      cursor: pointer;
+      box-shadow: 0 0 40px rgba(0, 229, 255, 0.4);
+      transition: transform 0.25s, box-shadow 0.25s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .voice-btn:hover, .voice-btn.active {
+      transform: scale(1.08);
+      box-shadow: 0 0 60px rgba(177, 76, 255, 0.55);
+    }
+    .voice-btn.active {
+      background: radial-gradient(circle at 30% 30%, #b14cff, #00ff9d);
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 40px rgba(177, 76, 255, 0.5); }
+      50% { box-shadow: 0 0 70px rgba(0, 255, 157, 0.7); }
+    }
+    .voice-status {
+      font-size: 0.95rem; color: var(--muted);
+      min-height: 1.4em;
+    }
+
+    .reels-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 800px) {
+      .reels-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; }
+    }
+    .reel-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      aspect-ratio: 9/16;
+      position: relative;
+      display: flex; flex-direction: column;
+    }
+    .reel-placeholder {
+      flex: 1;
+      background: linear-gradient(160deg, #0d1525, #1a0f2e);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 20px; text-align: center;
+    }
+    .reel-placeholder .icon { font-size: 2.4rem; }
+    .reel-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      padding: 24px 14px 14px;
+      font-size: 0.9rem; font-weight: 600;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+    @media (max-width: 900px) {
+      .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
+    }
+    .price-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      position: relative;
+      display: flex; flex-direction: column;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .price-card:hover {
+      border-color: rgba(0, 229, 255, 0.45);
+      transform: translateY(-4px);
+    }
+    .price-card.recommended {
+      border-color: var(--cyan);
+      box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
+    }
+    .badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      color: #000; font-size: 0.75rem; font-weight: 700;
+      padding: 4px 14px; border-radius: 999px;
+      white-space: nowrap;
+    }
+    .price-card h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.15rem; margin-bottom: 8px;
+    }
+    .price {
+      font-size: 2.1rem; font-weight: 800;
+      color: var(--cyan); margin: 8px 0 4px;
+    }
+    .price small { font-size: 0.95rem; color: var(--muted); font-weight: 500; }
+    .price-list {
+      list-style: none; margin: 20px 0 28px;
+      flex: 1;
+    }
+    .price-list li {
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .price-list li::before {
+      content: "✓ ";
+      color: var(--green);
+      font-weight: 700;
+    }
+    .btn-card {
+      width: 100%;
+      padding: 13px;
+      border-radius: 12px;
+      font-weight: 700;
+      border: none; cursor: pointer;
+      font-size: 0.95rem;
+      text-decoration: none;
+      text-align: center;
+      display: block;
+    }
+    .btn-card.primary {
+      background: linear-gradient(135deg, var(--cyan), #00b8d4);
+      color: #001018;
+    }
+    .btn-card.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .trust {
+      background: var(--bg-2);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      padding: 48px 20px;
+    }
+    .trust-box {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 24px;
+      font-size: 0.95rem;
+    }
+    footer {
+      padding: 40px 20px 100px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--cyan); text-decoration: none; }
+
+    .wa-float {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      z-index: 200;
+      background: #25d366;
+      color: #fff;
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 6px 24px rgba(37, 211, 102, 0.45);
+      text-decoration: none;
+      transition: transform 0.2s;
+    }
+    .wa-float:hover { transform: scale(1.1); }
+
+    .demo-badge {
+      display: inline-block;
+      background: #f5c542;
+      color: #001018;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+    .demo-note {
+      text-align: center;
+      color: var(--gold);
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin: 8px auto 0;
+      max-width: 560px;
+    }
+    @media (max-width: 600px) {
+      .nav { padding: 12px 16px; }
+      .hero { padding-top: 90px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="#" class="logo">AERO<span>VOLT</span>.IA <span class="demo-badge">DEMO · FASE TEST</span></a>
+    <a href="https://wa.me/526621042667?text=AEROVOLT" class="nav-cta" target="_blank" rel="noopener">Hablar por WhatsApp</a>
+  </nav>
+
+  <section class="hero" id="hero">
+    <div id="canvas-container"></div>
+    <div class="hero-content">
+      <h1>¿Y SI TU NEGOCIO TUVIERA SU PROPIO EQUIPO DIGITAL TRABAJANDO 24/7?</h1>
+      <p>Con AEROVOLT llevamos inteligencia artificial, automatización y marketing a tu negocio para ayudarte a atraer, atender y convertir más clientes.</p>
+      <div class="hero-buttons">
+        <button class="btn-primary" id="btn-probar-voz">⚡ PROBAR DEMO DE VOZ</button>
+        <a href="#paquetes" class="btn-ghost">Ver paquetes</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="container">
+      <h2 class="section-title">Prueba la demo del agente</h2>
+      <p class="section-sub">Simulador de WhatsApp + animación de voz. No es un agente autónomo conectado en producción.</p>
+      <p class="demo-note">FASE TEST · Todo lo que ves aquí es demostración visual.</p>
+
+      <div class="demo-grid">
+        <div class="chat-mock">
+          <div class="chat-header">
+            <div class="chat-avatar">A</div>
+            <div>
+              <strong>Aerovolt HMO</strong><br>
+              <small style="color:var(--gold)">● Demo (no en vivo)</small>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+        </div>
+
+        <div class="voice-panel">
+          <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;">Simulación de voz IA</h3>
+          <p style="color:var(--muted);font-size:0.9rem;max-width:260px;">Presiona el botón para activar la animación 3D. No es un agente de voz real conectado.</p>
+          <button class="voice-btn" id="voice-btn" title="Probar agente de voz">⚡</button>
+          <div class="voice-status" id="voice-status">Demo lista · simulación visual</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reels" style="background:var(--bg-2);">
+    <div class="container">
+      <h2 class="section-title">Así trabajan nuestros agentes</h2>
+      <p class="section-sub">Continúa visual de los personajes en el centro de operaciones Aerovolt.</p>
+
+      <div class="reels-grid">
+        <div class="reel-card">
+          <div class="reel-placeholder">
+            <div class="icon">💬</div>
+            <div>Personaje A<br>WhatsApp automatizado</div>
+          </div>
+          <div class="reel-label">REEL 1 · Texto y agentes</div>
+        </div>
+        <div class="reel-card">
+          <div class="reel-placeholder">
+            <div class="icon">📞</div>
+            <div>Personaje B<br>Llamadas y voz IA</div>
+          </div>
+          <div class="reel-label">REEL 2 · Llamadas y voz</div>
+        </div>
+        <div class="reel-card">
+          <div class="reel-placeholder">
+            <div class="icon">⚙️</div>
+            <div>A + B juntos<br>Ecosistema completo</div>
+          </div>
+          <div class="reel-label">REEL 3 · Ecosistema automático</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="paquetes">
+    <div class="container">
+      <h2 class="section-title">Paquetes de lanzamiento</h2>
+      <p class="section-sub">Cupos limitados. Pago anticipado obligatorio antes de abrir consola.</p>
+      <p class="demo-note">La demo de arriba es simulación. Los paquetes son la oferta comercial (sujeta a confirmación humana).</p>
+
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3>PAQUETE IA</h3>
+          <div class="price">$1,200 <small>MXN/mes</small></div>
+          <ul class="price-list">
+            <li>Asistente virtual 24/7</li>
+            <li>Atención WhatsApp</li>
+            <li>Respuestas automáticas</li>
+            <li>Cupo limitado a las primeras 10 personas</li>
+          </ul>
+          <a href="https://wa.me/526621042667?text=Quiero%20el%20Paquete%20IA%20%241200" class="btn-card secondary" target="_blank" rel="noopener">Apartar lugar</a>
+        </div>
+
+        <div class="price-card recommended">
+          <div class="badge">RECOMENDADO</div>
+          <h3>AEROVOLT PRO</h3>
+          <div class="price">$5,000 <small>MXN</small></div>
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:8px;">Implementación (antes $15,000)<br>Mensualidad congelada $5,000 × 3 meses</p>
+          <ul class="price-list">
+            <li>Todo lo del Paquete IA</li>
+            <li>Agentes autónomos avanzados</li>
+            <li>Flujos + base de datos</li>
+            <li>Contenido (posts + reels)</li>
+            <li>Cupo limitado a los primeros 5 clientes</li>
+          </ul>
+          <a href="https://wa.me/526621042667?text=Quiero%20AEROVOLT%20PRO%20%245000" class="btn-card primary" target="_blank" rel="noopener">Apartar PRO</a>
+        </div>
+
+        <div class="price-card">
+          <h3>ENTERPRISE</h3>
+          <div class="price" style="font-size:1.5rem;">A la medida</div>
+          <ul class="price-list">
+            <li>Orquestación completa</li>
+            <li>Integraciones a medida</li>
+            <li>Soporte prioritario</li>
+            <li>Ingeniero IA dedicado</li>
+          </ul>
+          <a href="https://wa.me/526621042667?text=Quiero%20hablar%20con%20un%20Ingeniero%20IA%20Enterprise" class="btn-card secondary" target="_blank" rel="noopener">Hablar con Ingeniero IA</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="trust">
+    <div class="trust-box">
+      🏢 <span><strong>NEGOCIO ESTABLECIDO</strong> · Oficina física y centro de operaciones · Se emite folio de servicio y comprobante oficial</span>
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2026 AEROVOLT.IA · Todos los derechos reservados</p>
+    <p style="margin-top:8px;">
+      WhatsApp: <a href="https://wa.me/526621042667?text=AEROVOLT" target="_blank" rel="noopener">662 104 2667</a>
+    </p>
+  </footer>
+
+  <a href="https://wa.me/526621042667?text=AEROVOLT" class="wa-float" target="_blank" rel="noopener" title="Escribe AEROVOLT">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </a>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (function () {
+      const container = document.getElementById('canvas-container');
+      if (!container) return;
+
+      const isMobile = window.innerWidth < 768;
+      const SEGMENTS = isMobile ? 40 : 60;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+      camera.position.set(0, 4.5, 9);
+      camera.lookAt(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setClearColor(0x000000, 0);
+      container.appendChild(renderer.domElement);
+
+      const geometry = new THREE.PlaneGeometry(10, 10, SEGMENTS, SEGMENTS);
+      geometry.rotateX(-Math.PI / 2);
+
+      const uniforms = {
+        u_time: { value: 0 },
+        u_energy: { value: 0 },
+        u_mouse: { value: new THREE.Vector2(0, 0) },
+        u_colorA: { value: new THREE.Color(0x00e5ff) },
+        u_colorB: { value: new THREE.Color(0xb14cff) },
+        u_colorC: { value: new THREE.Color(0x00ff9d) }
+      };
+
+      const material = new THREE.ShaderMaterial({
+        uniforms,
+        wireframe: true,
+        transparent: true,
+        vertexShader: `
+          uniform float u_time;
+          uniform float u_energy;
+          uniform vec2 u_mouse;
+          varying float vElevation;
+          varying vec2 vUv;
+
+          void main() {
+            vUv = uv;
+            vec3 pos = position;
+
+            float x = pos.x;
+            float z = pos.z;
+            float r = sqrt(x*x + z*z) + 0.0001;
+
+            float sinc = sin(r * 2.2 - u_time * (0.5 + u_energy * 2.5)) / r;
+            sinc *= 1.4;
+
+            float hyper = (x*x - z*z) * 0.12;
+            hyper += sin(x * 1.5 + u_time * 3.0) * 0.15 * u_energy;
+            hyper += cos(z * 1.5 + u_time * 2.8) * 0.12 * u_energy;
+
+            float dx = x - u_mouse.x * 5.0;
+            float dz = z - u_mouse.y * 5.0;
+            float dist = sqrt(dx*dx + dz*dz) + 0.001;
+            float ripple = sin(dist * 3.0 - u_time * 4.0) / dist * 0.35;
+            ripple *= (1.0 - smoothstep(0.0, 4.0, dist));
+
+            float elev = mix(sinc, hyper, u_energy) + ripple * (0.4 + u_energy * 0.6);
+            pos.y = elev;
+            vElevation = elev;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 u_colorA;
+          uniform vec3 u_colorB;
+          uniform vec3 u_colorC;
+          uniform float u_energy;
+          varying float vElevation;
+          varying vec2 vUv;
+
+          void main() {
+            float h = clamp(vElevation * 0.5 + 0.5, 0.0, 1.0);
+            vec3 col = mix(u_colorA, u_colorB, h);
+            col = mix(col, u_colorC, u_energy * 0.55);
+            float alpha = 0.35 + h * 0.45;
+            gl_FragColor = vec4(col, alpha);
+          }
+        `
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+
+      let targetEnergy = 0;
+      let currentEnergy = 0;
+
+      function onResize() {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+      window.addEventListener('resize', onResize);
+
+      container.addEventListener('pointermove', (e) => {
+        const rect = container.getBoundingClientRect();
+        uniforms.u_mouse.value.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        uniforms.u_mouse.value.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+      });
+
+      function animate(t) {
+        requestAnimationFrame(animate);
+        uniforms.u_time.value = t * 0.001;
+        currentEnergy += (targetEnergy - currentEnergy) * 0.05;
+        uniforms.u_energy.value = currentEnergy;
+        renderer.render(scene, camera);
+      }
+      animate(0);
+
+      const voiceBtn = document.getElementById('voice-btn');
+      const voiceStatus = document.getElementById('voice-status');
+      const btnProbar = document.getElementById('btn-probar-voz');
+
+      function activateVoiceDemo() {
+        targetEnergy = 1;
+        if (voiceBtn) voiceBtn.classList.add('active');
+        if (voiceStatus) voiceStatus.textContent = 'Demo activa · solo animación visual';
+        setTimeout(() => {
+          targetEnergy = 0;
+          if (voiceBtn) voiceBtn.classList.remove('active');
+          if (voiceStatus) voiceStatus.textContent = 'Demo lista · simulación visual';
+        }, 4000);
+      }
+
+      if (voiceBtn) voiceBtn.addEventListener('click', activateVoiceDemo);
+      if (btnProbar) btnProbar.addEventListener('click', () => {
+        document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(activateVoiceDemo, 600);
+      });
+    })();
+
+    (function () {
+      const box = document.getElementById('chat-messages');
+      if (!box) return;
+      const messages = [
+        { type: 'in', text: 'Hola, soy el asistente de Aerovolt (demo). ¿En qué puedo orientarte?' },
+        { type: 'out', text: 'Quiero información del Paquete IA' },
+        { type: 'in', text: 'Claro. En esta demo te muestro el flujo. Un humano confirma precios y alcance.' },
+        { type: 'out', text: '¿Puedo ver una demo de voz?' },
+        { type: 'in', text: 'Sí: usa el botón de simulación de voz. Es animación 3D, no un agente en producción.' }
+      ];
+      let idx = 0;
+      function addNext() {
+        if (idx >= messages.length) {
+          setTimeout(() => {
+            box.innerHTML = '';
+            idx = 0;
+            addNext();
+          }, 3500);
+          return;
+        }
+        const m = messages[idx++];
+        const el = document.createElement('div');
+        el.className = 'msg ' + m.type;
+        el.textContent = m.text;
+        box.appendChild(el);
+        box.scrollTop = box.scrollHeight;
+        setTimeout(addNext, 1600 + Math.random() * 800);
+      }
+      setTimeout(addNext, 800);
+    })();
+  </script>
+</body>
+</html>

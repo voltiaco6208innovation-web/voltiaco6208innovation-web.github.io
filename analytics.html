@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Analytics · Planta Solar</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14; --panel: #121820; --border: rgba(255,255,255,0.08);
+      --cyan: #3b9eff; --green: #22c55e; --yellow: #eab308; --orange: #f97316;
+      --red: #ef4444; --text: #e8eef7; --muted: #94a3b8; --gold: #d4af37;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--cyan); text-decoration: none; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+      padding: 12px 20px; background: #0e131a; border-bottom: 1px solid var(--border);
+    }
+    .brand { font-family: 'Orbitron', sans-serif; font-weight: 700; color: var(--gold); letter-spacing: 0.08em; }
+    .brand span { color: #fff; }
+    .demo { background: var(--gold); color: #111; font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; margin-left: 8px; }
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav a { font-size: 0.8rem; color: var(--muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; }
+    .nav a:hover, .nav a.active { color: var(--cyan); border-color: var(--cyan); }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 16px; }
+    .banner {
+      background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.35);
+      color: #eab308; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin-bottom: 16px;
+    }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 800px) { .metrics { grid-template-columns: 1fr 1fr; } }
+    .metric { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .metric .l { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric .v { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
+    .metric .s { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .grid-main { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .grid-main { grid-template-columns: 1fr; } }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .card h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .card h2 small { color: var(--muted); font-weight: 500; font-size: 0.75rem; }
+    .site-map {
+      position: relative; border-radius: 10px; overflow: hidden;
+      background: linear-gradient(160deg, #1a2a1a 0%, #0d1520 40%, #152030 100%);
+      min-height: 320px; padding: 16px;
+    }
+    .site-map .overlay-label {
+      position: absolute; top: 12px; left: 12px; z-index: 2;
+      background: rgba(0,0,0,0.65); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem;
+    }
+    .arrays { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 36px; }
+    .array-block {
+      aspect-ratio: 1.4; border-radius: 4px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .array-block:hover { transform: scale(1.04); box-shadow: 0 0 12px rgba(59,158,255,0.4); }
+    .legend-heat { display: flex; gap: 8px; align-items: center; margin-top: 12px; font-size: 0.7rem; color: var(--muted); flex-wrap: wrap; }
+    .legend-heat span { display: flex; align-items: center; gap: 4px; }
+    .sw { width: 14px; height: 10px; border-radius: 2px; }
+    .chart-box { position: relative; height: 220px; }
+    .chart-box.sm { height: 180px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .p-ok { background: rgba(34,197,94,0.15); color: var(--green); }
+    .p-warn { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .p-fault { background: rgba(249,115,22,0.15); color: var(--orange); }
+    .p-crit { background: rgba(239,68,68,0.15); color: var(--red); }
+    footer { text-align: center; padding: 20px; color: var(--muted); font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AERO<span>VOLT</span> · Analytics <span class="demo">DEMO · FASE TEST</span></div>
+    <nav class="nav">
+      <a href="control-center.html">Control Center</a>
+      <a href="monitor.html">Monitor</a>
+      <a href="analytics.html" class="active">Analytics</a>
+      <a href="industrial-3d.html">Planta 3D</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="banner">⚠ Datos simulados (DEMO). Estilo tipo software solar profesional · No representa inspección termográfica real ni SCADA en vivo.</div>
+    <div class="metrics" id="metrics"></div>
+    <div class="grid-main">
+      <div class="card">
+        <h2>Mapa de planta · Rendimiento por inversor <small>heatmap PR %</small></h2>
+        <div class="site-map">
+          <div class="overlay-label">📍 Planta Norte Culiacán · Vista esquemática</div>
+          <div class="arrays" id="arrays"></div>
+          <div class="legend-heat">
+            <span><i class="sw" style="background:#22c55e"></i> PR ≥ 90%</span>
+            <span><i class="sw" style="background:#84cc16"></i> 80–89%</span>
+            <span><i class="sw" style="background:#eab308"></i> 70–79%</span>
+            <span><i class="sw" style="background:#f97316"></i> 50–69%</span>
+            <span><i class="sw" style="background:#ef4444"></i> &lt; 50% / Offline</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Desglose por severidad <small>alarmas / anomalías</small></h2>
+        <div class="chart-box"><canvas id="chart-severity"></canvas></div>
+        <h2 style="margin-top:16px">Desglose por tipo</h2>
+        <div class="chart-box sm"><canvas id="chart-type"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><h2>PR por inversor</h2><div class="chart-box"><canvas id="chart-pr"></canvas></div></div>
+      <div class="card"><h2>Potencia vs esperada</h2><div class="chart-box"><canvas id="chart-power"></canvas></div></div>
+      <div class="card"><h2>Irradiancia vs producción</h2><div class="chart-box"><canvas id="chart-irr"></canvas></div></div>
+    </div>
+    <div class="card">
+      <h2>Tabla de rendimiento · Inversores</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>ID</th><th>Sector</th><th>Potencia</th><th>Esperada</th><th>PR</th><th>Δ</th><th>Estado</th><th>Alarma</th></tr></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <footer>AEROVOLT Analytics · DEMO · Estilo referencia software solar O&amp;M · Sin datos de campo reales</footer>
+  <script src="js/mock-data.js"></script>
+  <script>
+    const invs = AEROVOLT.inverters;
+    function prColor(pr, status) {
+      if (status === 'CRITICO') return '#ef4444';
+      if (pr >= 90) return '#22c55e';
+      if (pr >= 80) return '#84cc16';
+      if (pr >= 70) return '#eab308';
+      if (pr >= 50) return '#f97316';
+      return '#ef4444';
+    }
+    function pill(s) {
+      return { NORMAL: 'p-ok', ADVERTENCIA: 'p-warn', FALLA: 'p-fault', CRITICO: 'p-crit' }[s] || '';
+    }
+    const openAlarms = AEROVOLT.alarms.filter(a => a.status === 'ABIERTA');
+    const totalP = invs.reduce((s, i) => s + i.power_kw, 0);
+    const totalE = invs.reduce((s, i) => s + i.expected_kw, 0);
+    const avgPR = Math.round(invs.reduce((s, i) => s + AEROVOLT.calcPR(i), 0) / invs.length);
+    document.getElementById('metrics').innerHTML =
+      '<div class="metric"><div class="l">Anomalías activas</div><div class="v" style="color:var(--orange)">' + openAlarms.length + '</div><div class="s">alarmas abiertas</div></div>' +
+      '<div class="metric"><div class="l">Inversores impactados</div><div class="v">' + invs.filter(i => i.status !== 'NORMAL').length + '</div><div class="s">de ' + invs.length + ' equipos</div></div>' +
+      '<div class="metric"><div class="l">PR promedio</div><div class="v" style="color:var(--cyan)">' + avgPR + '%</div><div class="s">performance ratio</div></div>' +
+      '<div class="metric"><div class="l">Potencia actual</div><div class="v">' + totalP.toFixed(0) + ' <small style="font-size:0.9rem">kW</small></div><div class="s">esperada ~' + totalE.toFixed(0) + ' kW</div></div>';
+    const plantInvs = invs.filter(i => i.plantId === 'PLT-001');
+    const display = plantInvs.length ? plantInvs : invs.slice(0, 6);
+    let cells = '';
+    for (let i = 0; i < 12; i++) {
+      const inv = display[i % display.length];
+      const pr = AEROVOLT.calcPR(inv);
+      cells += '<div class="array-block" style="background:' + prColor(pr, inv.status) + '" title="' + inv.id + ' PR ' + pr + '%">' +
+        '<div class="id">' + inv.id + '</div><div class="pr">' + pr + '%</div></div>';
+    }
+    document.getElementById('arrays').innerHTML = cells;
+    document.getElementById('table-body').innerHTML = invs.map(i => {
+      const pr = AEROVOLT.calcPR(i);
+      const delta = (i.power_kw - i.expected_kw).toFixed(1);
+      return '<tr><td><strong>' + i.id + '</strong></td><td>' + i.sector + '</td><td>' + i.power_kw.toFixed(1) +
+        ' kW</td><td>' + i.expected_kw + ' kW</td><td>' + pr + '%</td><td style="color:' +
+        (delta < 0 ? 'var(--orange)' : 'var(--green)') + '">' + delta + '</td><td><span class="pill ' +
+        pill(i.status) + '">' + i.status + '</span></td><td style="font-size:0.8rem;color:var(--muted)">' +
+        (i.alarm || '—') + '</td></tr>';
+    }).join('');
+    const chartDefaults = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    };
+    const sevCounts = { ADVERTENCIA: 0, FALLA: 0, CRITICO: 0 };
+    openAlarms.forEach(a => { sevCounts[a.level] = (sevCounts[a.level] || 0) + 1; });
+    new Chart(document.getElementById('chart-severity'), {
+      type: 'bar',
+      data: {
+        labels: ['Crítico', 'Falla', 'Advertencia', 'OK'],
+        datasets: [{ data: [sevCounts.CRITICO || 0, sevCounts.FALLA || 0, sevCounts.ADVERTENCIA || 0, invs.filter(i => i.status === 'NORMAL').length],
+          backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e'], borderRadius: 4 }]
+      },
+      options: { ...chartDefaults, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+    new Chart(document.getElementById('chart-type'), {
+      type: 'bar',
+      data: {
+        labels: ['Producción baja', 'Offline / Comm', 'Desviación', 'Normal'],
+        datasets: [{ data: [
+          invs.filter(i => i.status === 'FALLA').length,
+          invs.filter(i => i.status === 'CRITICO').length,
+          invs.filter(i => i.status === 'ADVERTENCIA').length,
+          invs.filter(i => i.status === 'NORMAL').length
+        ], backgroundColor: ['#f97316', '#ef4444', '#eab308', '#3b9eff'], borderRadius: 4 }]
+      },
+      options: { ...chartDefaults, plugins: { legend: { display: false } } }
+    });
+    new Chart(document.getElementById('chart-pr'), {
+      type: 'bar',
+      data: {
+        labels: invs.map(i => i.id),
+        datasets: [{ label: 'PR %', data: invs.map(i => AEROVOLT.calcPR(i)),
+          backgroundColor: invs.map(i => prColor(AEROVOLT.calcPR(i), i.status)), borderRadius: 4 }]
+      },
+      options: { ...chartDefaults, plugins: { legend: { display: false } },
+        scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, max: 100 } } }
+    });
+    new Chart(document.getElementById('chart-power'), {
+      type: 'bar',
+      data: {
+        labels: invs.map(i => i.id),
+        datasets: [
+          { label: 'Actual', data: invs.map(i => i.power_kw), backgroundColor: '#3b9eff', borderRadius: 3 },
+          { label: 'Esperada', data: invs.map(i => i.expected_kw), backgroundColor: 'rgba(148,163,184,0.35)', borderRadius: 3 }
+        ]
+      },
+      options: chartDefaults
+    });
+    const labels = Array.from({ length: 12 }, (_, i) => (7 + i) + ':00');
+    const baseP = totalP / Math.max(invs.length, 1);
+    new Chart(document.getElementById('chart-irr'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Irradiancia', data: labels.map((_, i) => Math.round(150 + 750 * Math.sin((i + 0.5) / 3.5) + Math.random() * 40)),
+            borderColor: '#eab308', backgroundColor: 'rgba(234,179,8,0.1)', fill: true, tension: 0.35, yAxisID: 'y', pointRadius: 0 },
+          { label: 'Potencia', data: labels.map((_, i) => +(baseP * (0.55 + 0.45 * Math.sin((i + 0.5) / 3.5)) + Math.random() * 8).toFixed(1)),
+            borderColor: '#3b9eff', tension: 0.35, yAxisID: 'y1', pointRadius: 0 }
+        ]
+      },
+      options: {
+        ...chartDefaults,
+        scales: {
+          x: chartDefaults.scales.x,
+          y: { position: 'left', ticks: { color: '#eab308' }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y1: { position: 'right', ticks: { color: '#3b9eff' }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

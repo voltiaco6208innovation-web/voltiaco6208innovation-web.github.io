@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Monitorización O&M</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #05070d; --bg2: #0a0f1a; --card: rgba(12,18,32,0.85);
+      --border: rgba(0,229,255,0.15); --cyan: #00e5ff; --purple: #b14cff;
+      --green: #00ff9d; --gold: #f5c542; --orange: #ff8c42; --red: #ff3b5c;
+      --text: #e8f0ff; --muted: #8b9bb8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--cyan); text-decoration: none; }
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 20px; background: rgba(5,7,13,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1rem; color: var(--cyan); }
+    .brand span { color: #fff; }
+    .demo-tag {
+      background: var(--gold); color: #001018; font-size: 0.65rem; font-weight: 800;
+      padding: 3px 8px; border-radius: 999px; letter-spacing: 0.04em; margin-left: 8px;
+    }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .nav-links a {
+      font-size: 0.8rem; color: var(--muted); border: 1px solid var(--border);
+      padding: 6px 12px; border-radius: 999px; background: transparent;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--cyan); border-color: var(--cyan); }
+    .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 56px); }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+    .sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; }
+    .sidebar h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 16px 0 8px; }
+    .plant-item, .inv-item {
+      padding: 10px 12px; border-radius: 10px; margin-bottom: 6px; cursor: pointer;
+      border: 1px solid transparent; font-size: 0.88rem;
+    }
+    .plant-item:hover, .inv-item:hover, .plant-item.active, .inv-item.active {
+      background: rgba(0,229,255,0.08); border-color: var(--border);
+    }
+    .inv-item .st { float: right; font-size: 0.75rem; }
+    .main { padding: 20px; overflow-x: hidden; }
+    .banner {
+      background: rgba(245,197,66,0.12); border: 1px solid rgba(245,197,66,0.35);
+      color: var(--gold); padding: 10px 14px; border-radius: 10px; font-size: 0.85rem;
+      margin-bottom: 18px; font-weight: 600;
+    }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    @media (max-width: 800px) { .kpis { grid-template-columns: 1fr 1fr; } }
+    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+    .kpi .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi .value { font-size: 1.5rem; font-weight: 700; margin-top: 4px; font-family: 'Orbitron', sans-serif; }
+    .kpi .sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .card h2 { font-size: 0.95rem; font-family: 'Orbitron', sans-serif; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    tr:hover td { background: rgba(0,229,255,0.04); cursor: pointer; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .b-normal { background: rgba(0,255,157,0.15); color: var(--green); }
+    .b-warn { background: rgba(245,197,66,0.15); color: var(--gold); }
+    .b-fault { background: rgba(255,140,66,0.15); color: var(--orange); }
+    .b-crit { background: rgba(255,59,92,0.15); color: var(--red); }
+    .detail-panel {
+      display: none; position: fixed; right: 0; top: 56px; bottom: 0; width: min(380px, 100%);
+      background: var(--bg2); border-left: 1px solid var(--border); z-index: 40;
+      padding: 20px; overflow-y: auto; box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+    }
+    .detail-panel.open { display: block; }
+    .detail-panel h2 { font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 4px; }
+    .detail-close { float: right; background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; }
+    .metric-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; }
+    .metric-row span:last-child { font-weight: 600; color: var(--cyan); }
+    .chart-wrap { position: relative; height: 220px; }
+    .alarms-list { max-height: 280px; overflow-y: auto; }
+    .alarm-item {
+      padding: 10px 12px; border-radius: 10px; margin-bottom: 8px;
+      border-left: 3px solid var(--muted); background: rgba(0,0,0,0.2); font-size: 0.82rem;
+    }
+    .alarm-item.FALLA { border-left-color: var(--orange); }
+    .alarm-item.ADVERTENCIA { border-left-color: var(--gold); }
+    .alarm-item.CRITICO { border-left-color: var(--red); }
+    footer.mini { text-align: center; padding: 16px; color: var(--muted); font-size: 0.75rem; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AERO<span>VOLT</span> · O&M <span class="demo-tag">DEMO · FASE TEST</span></div>
+    <nav class="nav-links">
+      <a href="monitor.html" class="active">Monitor</a>
+      <a href="industrial-3d.html">Planta 3D</a>
+      <a href="admin.html">Admin</a>
+      <a href="index.html">Landing</a>
+    </nav>
+  </header>
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Plantas</h3>
+      <div id="plant-list"></div>
+      <h3>Inversores</h3>
+      <div id="inv-list"></div>
+    </aside>
+    <main class="main">
+      <div class="banner">⚠ Todos los datos de esta pantalla son <strong>simulados (DEMO / FASE TEST)</strong>. No representan lecturas reales de campo ni SCADA en vivo.</div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid-2">
+        <div class="card">
+          <h2>Inversores · Estado en tiempo real</h2>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr><th>ID</th><th>Sector</th><th>Potencia</th><th>PR</th><th>Estado</th><th>Comm</th></tr></thead>
+              <tbody id="inv-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Alarmas activas</h2>
+          <div class="alarms-list" id="alarms-list"></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h2>Potencia instantánea (demo)</h2>
+          <div class="chart-wrap"><canvas id="chart-power"></canvas></div>
+        </div>
+        <div class="card">
+          <h2>Irradiancia vs producción (demo)</h2>
+          <div class="chart-wrap"><canvas id="chart-irr"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Variables ambientales (demo)</h2>
+        <div class="kpis" id="env-kpis" style="margin:0"></div>
+      </div>
+      <div class="card">
+        <h2>Historial de eventos</h2>
+        <table>
+          <thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Equipo</th><th>Detalle</th></tr></thead>
+          <tbody id="history-table"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <div class="detail-panel" id="detail-panel">
+    <button class="detail-close" id="detail-close">×</button>
+    <div id="detail-content"></div>
+  </div>
+  <footer class="mini">AEROVOLT O&M · MVP Monitorización · IEC 61724-1 ready · Sin control remoto en esta fase</footer>
+  <script src="js/mock-data.js"></script>
+  <script>
+    let selectedPlant = 'PLT-001';
+    let selectedInv = null;
+    let powerChart, irrChart;
+    function badgeClass(s) {
+      return { NORMAL: 'b-normal', ADVERTENCIA: 'b-warn', FALLA: 'b-fault', CRITICO: 'b-crit' }[s] || '';
+    }
+    function renderPlants() {
+      const el = document.getElementById('plant-list');
+      el.innerHTML = AEROVOLT.plants.map(p =>
+        '<div class="plant-item ' + (p.id === selectedPlant ? 'active' : '') + '" data-id="' + p.id + '">' +
+        AEROVOLT.statusEmoji(p.status) + ' <strong>' + p.name + '</strong><br>' +
+        '<small style="color:var(--muted)">' + p.capacity_kw + ' kW · ' + p.location + '</small></div>'
+      ).join('');
+      el.querySelectorAll('.plant-item').forEach(n => n.onclick = () => { selectedPlant = n.dataset.id; renderAll(); });
+    }
+    function plantInverters() { return AEROVOLT.inverters.filter(i => i.plantId === selectedPlant); }
+    function renderInvList() {
+      const el = document.getElementById('inv-list');
+      el.innerHTML = plantInverters().map(i =>
+        '<div class="inv-item ' + (selectedInv === i.id ? 'active' : '') + '" data-id="' + i.id + '">' +
+        i.id + ' <span class="st">' + AEROVOLT.statusEmoji(i.status) + '</span></div>'
+      ).join('');
+      el.querySelectorAll('.inv-item').forEach(n => n.onclick = () => openDetail(n.dataset.id));
+    }
+    function renderKPIs() {
+      const invs = plantInverters();
+      const totalP = invs.reduce((s, i) => s + i.power_kw, 0);
+      const totalE = invs.reduce((s, i) => s + i.energy_kwh, 0);
+      const online = invs.filter(i => i.status !== 'CRITICO').length;
+      const alarms = AEROVOLT.alarms.filter(a => a.plantId === selectedPlant && a.status === 'ABIERTA').length;
+      document.getElementById('kpis').innerHTML =
+        '<div class="kpi"><div class="label">Potencia actual</div><div class="value" style="color:var(--cyan)">' + totalP.toFixed(1) + '</div><div class="sub">kW · demo</div></div>' +
+        '<div class="kpi"><div class="label">Energía hoy</div><div class="value">' + totalE.toFixed(0) + '</div><div class="sub">kWh · demo</div></div>' +
+        '<div class="kpi"><div class="label">Inversores online</div><div class="value">' + online + '/' + invs.length + '</div><div class="sub">comunicación</div></div>' +
+        '<div class="kpi"><div class="label">Alarmas abiertas</div><div class="value" style="color:' + (alarms ? 'var(--orange)' : 'var(--green)') + '">' + alarms + '</div><div class="sub">activas</div></div>';
+    }
+    function renderTable() {
+      document.getElementById('inv-table').innerHTML = plantInverters().map(i =>
+        '<tr data-id="' + i.id + '"><td><strong>' + i.id + '</strong></td><td>' + i.sector + '</td><td>' + i.power_kw.toFixed(1) + ' kW</td><td>' +
+        AEROVOLT.calcPR(i) + '%</td><td><span class="badge ' + badgeClass(i.status) + '">' + i.status + '</span></td><td>' + i.last_comm_s + 's</td></tr>'
+      ).join('');
+      document.querySelectorAll('#inv-table tr').forEach(r => r.onclick = () => openDetail(r.dataset.id));
+    }
+    function renderAlarms() {
+      const list = document.getElementById('alarms-list');
+      const items = AEROVOLT.alarms.filter(a => a.plantId === selectedPlant && a.status === 'ABIERTA');
+      if (!items.length) { list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">Sin alarmas abiertas</p>'; return; }
+      list.innerHTML = items.map(a =>
+        '<div class="alarm-item ' + a.level + '"><strong>' + a.equipmentId + '</strong> · ' + a.level + '<br>' + a.message + '<br>' +
+        '<small style="color:var(--muted)">' + (a.value != null ? a.value + ' / ' + a.expected + ' ' + a.unit : '') + ' · ' +
+        new Date(a.ts).toLocaleString('es-MX') + '</small></div>'
+      ).join('');
+    }
+    function renderEnv() {
+      const e = AEROVOLT.env;
+      document.getElementById('env-kpis').innerHTML =
+        '<div class="kpi"><div class="label">Irradiancia</div><div class="value" style="font-size:1.2rem">' + e.irradiance + '</div><div class="sub">W/m²</div></div>' +
+        '<div class="kpi"><div class="label">T. módulo</div><div class="value" style="font-size:1.2rem">' + e.module_temp + '°</div><div class="sub">C</div></div>' +
+        '<div class="kpi"><div class="label">T. ambiente</div><div class="value" style="font-size:1.2rem">' + e.ambient_temp + '°</div><div class="sub">C</div></div>' +
+        '<div class="kpi"><div class="label">Viento</div><div class="value" style="font-size:1.2rem">' + e.wind_speed + '</div><div class="sub">m/s · ' + e.wind_dir + '°</div></div>' +
+        '<div class="kpi"><div class="label">Lluvia</div><div class="value" style="font-size:1.2rem">' + e.rain_mm + '</div><div class="sub">mm</div></div>' +
+        '<div class="kpi"><div class="label">Humedad</div><div class="value" style="font-size:1.2rem">' + e.humidity + '%</div><div class="sub"></div></div>' +
+        '<div class="kpi"><div class="label">Soiling</div><div class="value" style="font-size:1.2rem">' + (e.soiling_index*100).toFixed(0) + '%</div><div class="sub">índice</div></div>';
+    }
+    function renderHistory() {
+      document.getElementById('history-table').innerHTML = AEROVOLT.history.map(h =>
+        '<tr><td>' + new Date(h.ts).toLocaleString('es-MX') + '</td><td>' + h.type + '</td><td>' + (h.equipmentId || '—') + '</td><td>' + h.detail + '</td></tr>'
+      ).join('');
+    }
+    function openDetail(id) {
+      selectedInv = id;
+      const inv = AEROVOLT.inverters.find(i => i.id === id);
+      if (!inv) return;
+      document.getElementById('detail-content').innerHTML =
+        '<h2>' + inv.id + ' · ' + inv.name + '</h2>' +
+        '<p style="color:var(--muted);margin-bottom:12px">' + inv.sector + ' · <span class="badge ' + badgeClass(inv.status) + '">' + inv.status + '</span></p>' +
+        (inv.alarm ? '<p style="color:var(--orange);margin-bottom:12px">⚠ ' + inv.alarm + '</p>' : '') +
+        '<div class="metric-row"><span>Potencia AC</span><span>' + inv.power_kw + ' kW</span></div>' +
+        '<div class="metric-row"><span>Esperada</span><span>' + inv.expected_kw + ' kW</span></div>' +
+        '<div class="metric-row"><span>Rendimiento (PR)</span><span>' + AEROVOLT.calcPR(inv) + '%</span></div>' +
+        '<div class="metric-row"><span>DC</span><span>' + inv.dc_v + ' V / ' + inv.dc_a + ' A</span></div>' +
+        '<div class="metric-row"><span>AC</span><span>' + inv.ac_v + ' V / ' + inv.ac_a + ' A</span></div>' +
+        '<div class="metric-row"><span>Energía</span><span>' + inv.energy_kwh + ' kWh</span></div>' +
+        '<div class="metric-row"><span>Frecuencia</span><span>' + inv.freq + ' Hz</span></div>' +
+        '<div class="metric-row"><span>Factor de potencia</span><span>' + inv.pf + '</span></div>' +
+        '<div class="metric-row"><span>Última comunicación</span><span>' + inv.last_comm_s + ' s</span></div>' +
+        '<p style="margin-top:16px;font-size:0.75rem;color:var(--gold)">Datos simulados · DEMO. Preparado para API/MQTT real.</p>' +
+        '<p style="margin-top:8px"><a href="industrial-3d.html?inv=' + inv.id + '">Ver en planta 3D →</a></p>';
+      document.getElementById('detail-panel').classList.add('open');
+      renderInvList();
+    }
+    document.getElementById('detail-close').onclick = () => {
+      document.getElementById('detail-panel').classList.remove('open');
+      selectedInv = null; renderInvList();
+    };
+    function initCharts() {
+      const labels = Array.from({ length: 12 }, (_, i) => (8 + i) + ':00');
+      const invs = plantInverters();
+      const powerData = labels.map((_, i) => {
+        const base = invs.reduce((s, inv) => s + inv.power_kw, 0) / Math.max(invs.length, 1);
+        return +(base * (0.7 + 0.3 * Math.sin(i / 2)) + Math.random() * 5).toFixed(1);
+      });
+      const irrData = labels.map((_, i) => Math.round(200 + 700 * Math.sin((i + 1) / 4) + Math.random() * 40));
+      if (powerChart) powerChart.destroy();
+      if (irrChart) irrChart.destroy();
+      powerChart = new Chart(document.getElementById('chart-power'), {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'kW (demo)', data: powerData, borderColor: '#00e5ff', backgroundColor: 'rgba(0,229,255,0.1)', fill: true, tension: 0.3 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#8b9bb8' } }, y: { ticks: { color: '#8b9bb8' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+      });
+      irrChart = new Chart(document.getElementById('chart-irr'), {
+        type: 'line',
+        data: { labels, datasets: [
+          { label: 'Irradiancia', data: irrData, borderColor: '#f5c542', yAxisID: 'y', tension: 0.3 },
+          { label: 'Potencia', data: powerData, borderColor: '#00e5ff', yAxisID: 'y1', tension: 0.3 }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, scales: {
+          y: { position: 'left', ticks: { color: '#f5c542' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y1: { position: 'right', ticks: { color: '#00e5ff' }, grid: { drawOnChartArea: false } },
+          x: { ticks: { color: '#8b9bb8' } }
+        }}
+      });
+    }
+    function renderAll() {
+      renderPlants(); renderInvList(); renderKPIs(); renderTable();
+      renderAlarms(); renderEnv(); renderHistory(); initCharts();
+    }
+    renderAll();
+    setInterval(() => { AEROVOLT.tick(); renderKPIs(); renderTable(); renderEnv(); }, 4000);
+  </script>
+</body>
+</html>

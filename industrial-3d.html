@@ -3,40 +3,65 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AEROVOLT · Visualizador Industrial 3D</title>
+  <title>AEROVOLT · Planta Solar 3D</title>
   <meta name="robots" content="noindex" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0a; font-family: system-ui, sans-serif; }
     canvas { display: block; }
     .hud {
-      position: fixed; top: 16px; left: 16px; z-index: 10;
-      font-family: system-ui, sans-serif; color: #e8f0ff;
-      background: rgba(5,7,13,0.75); backdrop-filter: blur(10px);
-      border: 1px solid rgba(0,229,255,0.25); border-radius: 12px;
-      padding: 14px 18px; max-width: 280px; font-size: 0.85rem;
+      position: fixed; top: 12px; left: 12px; z-index: 10;
+      color: #e8f0ff; background: rgba(5,7,13,0.85); backdrop-filter: blur(10px);
+      border: 1px solid rgba(0,229,255,0.25); border-radius: 12px; padding: 12px 16px; max-width: 300px; font-size: 0.85rem;
     }
-    .hud h1 { font-size: 0.95rem; color: #00e5ff; margin-bottom: 8px; letter-spacing: 0.06em; }
-    .hud p { color: #8b9bb8; margin-bottom: 6px; }
-    .hud .val { color: #00ff9d; font-weight: 600; }
-    .back {
-      position: fixed; bottom: 20px; left: 20px; z-index: 10;
-      background: rgba(0,229,255,0.15); border: 1px solid #00e5ff;
-      color: #00e5ff; padding: 10px 18px; border-radius: 999px;
-      text-decoration: none; font-family: system-ui; font-size: 0.9rem; font-weight: 600;
+    .hud h1 { font-size: 0.9rem; color: #00e5ff; margin-bottom: 6px; letter-spacing: 0.05em; }
+    .hud .demo { color: #f5c542; font-size: 0.72rem; font-weight: 700; margin-bottom: 8px; }
+    .hud p { color: #8b9bb8; margin-bottom: 4px; font-size: 0.8rem; }
+    .nav3d { position: fixed; top: 12px; right: 12px; z-index: 10; display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav3d a {
+      background: rgba(5,7,13,0.85); border: 1px solid rgba(0,229,255,0.25); color: #00e5ff;
+      padding: 8px 14px; border-radius: 999px; text-decoration: none; font-size: 0.8rem; font-weight: 600;
     }
-    .back:hover { background: rgba(0,229,255,0.3); }
+    .panel {
+      position: fixed; right: 12px; bottom: 12px; width: min(340px, calc(100% - 24px)); z-index: 10;
+      background: rgba(5,7,13,0.92); border: 1px solid rgba(0,229,255,0.25); border-radius: 14px;
+      padding: 16px; color: #e8f0ff; font-size: 0.85rem; display: none;
+    }
+    .panel.open { display: block; }
+    .panel h2 { font-size: 1rem; color: #00e5ff; margin-bottom: 4px; }
+    .panel .status { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; margin-bottom: 10px; }
+    .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .row span:last-child { font-weight: 600; color: #00e5ff; }
+    .close-btn { float: right; background: none; border: none; color: #8b9bb8; font-size: 1.3rem; cursor: pointer; }
+    .legend {
+      position: fixed; bottom: 12px; left: 12px; z-index: 10;
+      background: rgba(5,7,13,0.85); border: 1px solid rgba(0,229,255,0.2); border-radius: 10px;
+      padding: 10px 14px; font-size: 0.75rem; color: #8b9bb8;
+    }
+    .legend span { margin-right: 10px; }
   </style>
 </head>
 <body>
   <div class="hud">
-    <h1>AEROVOLT · INDUSTRIAL 3D</h1>
-    <p>Viento: <span class="val" id="wind-val">0</span> m/s</p>
-    <p>Lluvia: <span class="val" id="rain-val">0</span></p>
-    <p style="margin-top:10px;font-size:0.75rem;opacity:0.7">Simulación de entorno · Fase TEST</p>
+    <h1>AEROVOLT · PLANTA 3D</h1>
+    <div class="demo">DEMO · FASE TEST · Datos simulados</div>
+    <p>Haz clic en un inversor para ver detalle.</p>
+    <p>Planta Norte Culiacán</p>
   </div>
-  <a href="index.html" class="back">← Volver a la landing</a>
+  <div class="nav3d">
+    <a href="monitor.html">Monitor</a>
+    <a href="admin.html">Admin</a>
+    <a href="index.html">Landing</a>
+  </div>
+  <div class="legend">
+    <span>🟢 Normal</span><span>🟡 Advertencia</span><span>🟠 Falla</span><span>🔴 Crítico</span>
+  </div>
+  <div class="panel" id="detail">
+    <button class="close-btn" id="close-detail">×</button>
+    <div id="detail-body"></div>
+  </div>
 
+  <script src="js/mock-data.js"></script>
   <script type="importmap">
   {
     "imports": {
@@ -52,169 +77,165 @@
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
     const IS_MOBILE = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+    const plantInvs = AEROVOLT.inverters.filter(i => i.plantId === 'PLT-001');
 
     const renderer = new THREE.WebGLRenderer({ antialias: !IS_MOBILE, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x0a0a0a, 1);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
     document.body.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
-    camera.position.set(0, 5, 15);
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 14, 22);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.03);
-    scene.add(ambientLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+    const sun = new THREE.DirectionalLight(0xfff2dd, 0.8);
+    sun.position.set(10, 20, 8);
+    scene.add(sun);
 
-    const pointLight = new THREE.PointLight(0xff0000, 1.5, 30);
-    pointLight.position.set(0, 8, 0);
-    scene.add(pointLight);
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(60, 40),
+      new THREE.MeshStandardMaterial({ color: 0x1a1f18, metalness: 0.2, roughness: 0.85 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
 
-    const industrialMetalMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1d1d1d, metalness: 0.9, roughness: 0.4
-    });
+    const statusHex = { NORMAL: 0x00ff9d, ADVERTENCIA: 0xf5c542, FALLA: 0xff8c42, CRITICO: 0xff3b5c };
+    const invMeshes = [];
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
 
-    const redEnergyMaterial = new THREE.MeshStandardMaterial({
-      color: 0x550000, metalness: 0.8, roughness: 0.2,
-      emissive: new THREE.Color(0xff0000), emissiveIntensity: 3.5
-    });
+    plantInvs.forEach((inv, idx) => {
+      const col = idx % 3;
+      const row = Math.floor(idx / 3);
+      const x = (col - 1) * 7;
+      const z = row * 8 - 4;
 
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), industrialMetalMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    scene.add(floor);
+      const pad = new THREE.Mesh(
+        new THREE.BoxGeometry(3.2, 0.3, 2.4),
+        new THREE.MeshStandardMaterial({ color: 0x2a2a2a, metalness: 0.6, roughness: 0.4 })
+      );
+      pad.position.set(x, 0.15, z);
+      scene.add(pad);
 
-    const boxGeo = new THREE.BoxGeometry(3, 8, 3);
-    const building = new THREE.Mesh(boxGeo, industrialMetalMaterial);
-    building.position.set(-5, 4, -5);
-    scene.add(building);
-
-    const building2 = new THREE.Mesh(boxGeo, industrialMetalMaterial);
-    building2.position.set(6, 4, -8);
-    building2.scale.set(1.2, 1.4, 1);
-    scene.add(building2);
-
-    const tubeGeo = new THREE.CylinderGeometry(0.1, 0.1, 20, 8);
-    const energyTube = new THREE.Mesh(tubeGeo, redEnergyMaterial);
-    energyTube.rotation.z = Math.PI / 2;
-    energyTube.position.set(0, 0.2, -2);
-    scene.add(energyTube);
-
-    const energyTube2 = new THREE.Mesh(tubeGeo, redEnergyMaterial);
-    energyTube2.rotation.z = Math.PI / 2;
-    energyTube2.position.set(0, 0.2, 3);
-    scene.add(energyTube2);
-
-    let rainParticles = null;
-    let rainGeometry = null;
-    const maxRainCount = IS_MOBILE ? 1500 : 5000;
-    let currentWindSpeed = 0;
-    let currentRainIntensity = 0;
-
-    function createRainSystem() {
-      if (rainParticles) return;
-      rainGeometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(maxRainCount * 3);
-      for (let i = 0; i < maxRainCount * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 40;
-        positions[i + 1] = Math.random() * 20;
-        positions[i + 2] = (Math.random() - 0.5) * 40;
-      }
-      rainGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      const rainMat = new THREE.PointsMaterial({
-        color: 0x7799bb, size: IS_MOBILE ? 0.08 : 0.04,
-        transparent: true, opacity: 0.6,
-        blending: THREE.AdditiveBlending, depthWrite: false
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x222222, metalness: 0.7, roughness: 0.35,
+        emissive: new THREE.Color(statusHex[inv.status] || 0x444444),
+        emissiveIntensity: 0.45
       });
-      rainParticles = new THREE.Points(rainGeometry, rainMat);
-      scene.add(rainParticles);
-    }
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 1.4), bodyMat);
+      body.position.set(x, 1.4, z);
+      body.userData = { invId: inv.id };
+      scene.add(body);
+      invMeshes.push(body);
 
-    function destroyRainSystem() {
-      if (!rainParticles) return;
-      scene.remove(rainParticles);
-      rainGeometry.dispose();
-      rainParticles.material.dispose();
-      rainParticles = null;
-      rainGeometry = null;
-    }
+      const beacon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.25, 12, 12),
+        new THREE.MeshStandardMaterial({
+          color: statusHex[inv.status],
+          emissive: new THREE.Color(statusHex[inv.status]),
+          emissiveIntensity: 2.2
+        })
+      );
+      beacon.position.set(x, 2.7, z);
+      beacon.userData = { invId: inv.id };
+      scene.add(beacon);
+      invMeshes.push(beacon);
 
-    function updateWeatherEffects(weatherData) {
-      currentWindSpeed = weatherData.wind.speed;
-      currentRainIntensity = weatherData.rain ? weatherData.rain.intensity : 0;
-      document.getElementById('wind-val').textContent = currentWindSpeed.toFixed(1);
-      document.getElementById('rain-val').textContent = (currentRainIntensity * 100).toFixed(0) + '%';
-      if (currentRainIntensity > 0) {
-        createRainSystem();
-        industrialMetalMaterial.roughness = THREE.MathUtils.lerp(0.4, 0.10, currentRainIntensity);
-        industrialMetalMaterial.metalness = THREE.MathUtils.lerp(0.9, 1.0, currentRainIntensity);
-        if (rainParticles) rainParticles.visible = true;
-      } else {
-        industrialMetalMaterial.roughness = 0.4;
-        industrialMetalMaterial.metalness = 0.9;
-        if (rainParticles) rainParticles.visible = false;
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#00e5ff';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(inv.id, 128, 42);
+      const tex = new THREE.CanvasTexture(canvas);
+      const label = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.2, 0.55),
+        new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+      );
+      label.position.set(x, 3.3, z);
+      scene.add(label);
+    });
+
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 4; c++) {
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(4, 0.08, 1.5),
+          new THREE.MeshStandardMaterial({ color: 0x0a1525, metalness: 0.8, roughness: 0.25, emissive: 0x001133, emissiveIntensity: 0.15 })
+        );
+        panel.position.set((c - 1.5) * 5, 0.8, -12 - r * 2.5);
+        panel.rotation.x = -0.35;
+        scene.add(panel);
       }
     }
 
-    setTimeout(() => updateWeatherEffects({ wind: { speed: 25 }, rain: { intensity: 0.8 } }), 2000);
-    setTimeout(() => updateWeatherEffects({ wind: { speed: 8 }, rain: { intensity: 0.3 } }), 12000);
-    setTimeout(() => updateWeatherEffects({ wind: { speed: 2 }, rain: { intensity: 0 } }), 22000);
-
-    const renderPass = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.3, 0.85);
     const composer = new EffectComposer(renderer);
-    composer.addPass(renderPass);
-    composer.addPass(bloomPass);
+    composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.35, 0.82));
+
+    function showDetail(invId) {
+      const inv = AEROVOLT.inverters.find(i => i.id === invId);
+      if (!inv) return;
+      const color = AEROVOLT.statusColor(inv.status);
+      let alarmHtml = inv.alarm ? ('<p style="color:#ff8c42;margin:8px 0">⚠ ' + inv.alarm + '</p>') : '';
+      document.getElementById('detail-body').innerHTML =
+        '<h2>' + inv.id + '</h2>' +
+        '<span class="status" style="background:' + color + '22;color:' + color + '">' + inv.status + '</span>' +
+        alarmHtml +
+        '<div class="row"><span>Potencia</span><span>' + inv.power_kw + ' kW</span></div>' +
+        '<div class="row"><span>Esperada</span><span>' + inv.expected_kw + ' kW</span></div>' +
+        '<div class="row"><span>Rendimiento</span><span>' + AEROVOLT.calcPR(inv) + '%</span></div>' +
+        '<div class="row"><span>DC</span><span>' + inv.dc_v + ' V / ' + inv.dc_a + ' A</span></div>' +
+        '<div class="row"><span>AC</span><span>' + inv.ac_v + ' V / ' + inv.ac_a + ' A</span></div>' +
+        '<div class="row"><span>Energía</span><span>' + inv.energy_kwh + ' kWh</span></div>' +
+        '<div class="row"><span>Última comm</span><span>' + inv.last_comm_s + ' s</span></div>' +
+        '<p style="margin-top:12px;font-size:0.72rem;color:#f5c542">Datos simulados · DEMO</p>' +
+        '<p style="margin-top:6px"><a href="monitor.html" style="color:#00e5ff">Abrir en Monitor →</a></p>';
+      document.getElementById('detail').classList.add('open');
+    }
+
+    document.getElementById('close-detail').onclick = function () {
+      document.getElementById('detail').classList.remove('open');
+    };
+
+    window.addEventListener('pointerdown', function (e) {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(invMeshes);
+      if (hits.length && hits[0].object.userData.invId) {
+        showDetail(hits[0].object.userData.invId);
+      }
+    });
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('inv')) setTimeout(function () { showDetail(params.get('inv')); }, 600);
 
     const clock = new THREE.Clock();
-
     function animate() {
       requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
-      const windFactor = 1.0 + (currentWindSpeed * 0.12);
-      redEnergyMaterial.emissiveIntensity = 3.5 + Math.sin(elapsedTime * 8 * windFactor) * 1.5;
-      energyTube.rotation.y = elapsedTime * 0.5 * windFactor;
-      energyTube2.rotation.y = -elapsedTime * 0.4 * windFactor;
-      camera.position.x = Math.sin(elapsedTime * 0.08) * 2;
-      camera.lookAt(0, 2, 0);
-
-      if (rainParticles && currentRainIntensity > 0) {
-        const positions = rainGeometry.attributes.position.array;
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] -= (0.3 + Math.random() * 0.2) * (1 + currentRainIntensity);
-          positions[i] += (currentWindSpeed * 0.005);
-          if (positions[i + 1] < 0) {
-            positions[i + 1] = 20;
-            positions[i] = (Math.random() - 0.5) * 40;
-          }
+      const t = clock.getElapsedTime();
+      camera.position.x = Math.sin(t * 0.08) * 3;
+      camera.lookAt(0, 1.5, 0);
+      invMeshes.forEach(function (m) {
+        if (m.geometry.type === 'SphereGeometry' && m.material.emissive) {
+          m.material.emissiveIntensity = 1.8 + Math.sin(t * 3) * 0.5;
         }
-        rainGeometry.attributes.position.needsUpdate = true;
-      }
+      });
       composer.render();
     }
     animate();
 
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', function () {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       composer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    window.addEventListener('pagehide', () => {
-      destroyRainSystem();
-      scene.traverse((object) => {
-        if (!object.isMesh) return;
-        if (object.geometry) object.geometry.dispose();
-        if (object.material) {
-          if (Array.isArray(object.material)) object.material.forEach(m => m.dispose());
-          else object.material.dispose();
-        }
-      });
-      composer.dispose();
-      renderer.dispose();
     });
   </script>
 </body>

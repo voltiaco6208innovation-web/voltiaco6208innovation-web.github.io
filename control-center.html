@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Control Center</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #050608; --panel: rgba(10, 12, 18, 0.92); --border: rgba(212, 175, 55, 0.28);
+      --gold: #d4af37; --gold2: #f5d76e; --cyan: #00e5ff; --green: #00ff9d;
+      --orange: #ff8c42; --red: #ff3b5c; --text: #e8ecf4; --muted: #8b93a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh;
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, transparent 55%), linear-gradient(180deg, #050608 0%, #0a0c12 100%);
+    }
+    a { color: var(--gold); text-decoration: none; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between; padding: 10px 18px;
+      border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+    }
+    .brand { font-family: 'Orbitron', sans-serif; font-size: 0.95rem; letter-spacing: 0.12em; color: var(--gold); }
+    .brand small { color: var(--muted); letter-spacing: 0.06em; font-size: 0.7rem; display: block; margin-top: 2px; }
+    .top-meta { display: flex; gap: 16px; align-items: center; font-size: 0.75rem; color: var(--muted); flex-wrap: wrap; }
+    .online { color: var(--green); font-weight: 700; }
+    .demo-tag { background: var(--gold); color: #0a0a0a; font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+    .nav a { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; margin-left: 6px; }
+    .nav a:hover { color: var(--gold); border-color: var(--gold); }
+    .grid {
+      display: grid; grid-template-columns: 220px 1fr 260px; gap: 10px; padding: 10px; min-height: calc(100vh - 52px);
+    }
+    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .side-l, .side-r { display: none; } }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .panel h3 { font-family: 'Orbitron', sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; }
+    .stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .stat-row .v { color: var(--gold2); font-weight: 600; }
+    .bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin: 4px 0 10px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 3px; }
+    .synoptic {
+      position: relative; min-height: 420px;
+      background: linear-gradient(rgba(212,175,55,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.03) 1px, transparent 1px), rgba(8,10,14,0.95);
+      background-size: 24px 24px, 24px 24px, auto; overflow: hidden;
+    }
+    .synoptic-title {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--gold); letter-spacing: 0.15em; z-index: 2;
+    }
+    .synoptic-canvas { width: 100%; min-height: 400px; display: flex; align-items: center; justify-content: center; padding: 40px 20px 20px; }
+    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 900px; }
+    .node {
+      background: rgba(0,0,0,0.45); border: 1px solid var(--border); border-radius: 8px; padding: 12px 10px;
+      text-align: center; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .node:hover, .node.active { border-color: var(--gold); box-shadow: 0 0 18px rgba(212,175,55,0.25); }
+    .node .icon { font-size: 1.6rem; margin-bottom: 4px; }
+    .node .id { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: var(--gold); }
+    .node .name { font-size: 0.7rem; color: var(--muted); margin: 2px 0 6px; }
+    .node .val { font-size: 1.1rem; font-weight: 700; font-family: 'Share Tech Mono', monospace; }
+    .node .unit { font-size: 0.65rem; color: var(--muted); }
+    .node .badge { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; }
+    .s-normal { background: rgba(0,255,157,0.15); color: var(--green); }
+    .s-warn { background: rgba(245,197,66,0.15); color: #f5c542; }
+    .s-fault { background: rgba(255,140,66,0.15); color: var(--orange); }
+    .s-crit { background: rgba(255,59,92,0.15); color: var(--red); }
+    .pipe-row { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; height: 28px; color: var(--gold); opacity: 0.5; font-size: 0.8rem; letter-spacing: 0.3em; }
+    .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+    @media (max-width: 700px) { .kpi-strip { grid-template-columns: 1fr 1fr; } }
+    .kpi { background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.15); border-radius: 6px; padding: 10px; text-align: center; }
+    .kpi .l { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .kpi .v { font-family: 'Orbitron', sans-serif; font-size: 1.15rem; color: var(--gold2); margin-top: 2px; }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    @media (max-width: 700px) { .charts { grid-template-columns: 1fr; } }
+    .chart-box { height: 160px; position: relative; }
+    .alarm-item { padding: 8px 10px; margin-bottom: 6px; border-radius: 6px; border-left: 3px solid var(--muted); background: rgba(0,0,0,0.3); font-size: 0.75rem; }
+    .alarm-item.FALLA { border-left-color: var(--orange); }
+    .alarm-item.ADVERTENCIA { border-left-color: #f5c542; }
+    .alarm-item.CRITICO { border-left-color: var(--red); }
+    .term {
+      font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; background: #000;
+      border: 1px solid rgba(0,255,157,0.25); border-radius: 6px; padding: 10px; color: var(--green);
+      min-height: 120px; max-height: 160px; overflow-y: auto;
+    }
+    .term .line { margin-bottom: 3px; }
+    .term .t { color: var(--muted); }
+    .bottom-nav {
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 8px;
+      border-top: 1px solid var(--border); background: rgba(0,0,0,0.4);
+    }
+    .bottom-nav a, .bottom-nav span {
+      font-family: 'Orbitron', sans-serif; font-size: 0.65rem; letter-spacing: 0.08em;
+      padding: 8px 14px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted);
+    }
+    .bottom-nav a:hover, .bottom-nav .active { color: var(--gold); border-color: var(--gold); background: rgba(212,175,55,0.08); }
+    .banner {
+      grid-column: 1 / -1; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.35);
+      color: var(--gold); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">AEROVOLT // CONTROL CENTER</div>
+      <small>O&amp;M · MONITORING · ING BRAYAN NICHOLS</small>
+    </div>
+    <div class="top-meta">
+      <span class="demo-tag">DEMO · FASE TEST</span>
+      <span class="online">● SYSTEM ONLINE</span>
+      <span id="clock">--:--:--</span>
+      <nav class="nav">
+        <a href="monitor.html">Monitor</a>
+        <a href="industrial-3d.html">Planta 3D</a>
+        <a href="admin.html">Admin</a>
+        <a href="index.html">Landing</a>
+      </nav>
+    </div>
+  </header>
+  <div class="grid">
+    <div class="banner">⚠ Datos simulados · No es SCADA en vivo · Preparado para API/MQTT real · Sin control remoto en MVP</div>
+    <aside class="side-l">
+      <div class="panel" style="margin-bottom:10px">
+        <h3>System Status</h3>
+        <div class="stat-row"><span>CPU</span><span class="v">42%</span></div><div class="bar"><i style="width:42%"></i></div>
+        <div class="stat-row"><span>Memory</span><span class="v">58%</span></div><div class="bar"><i style="width:58%"></i></div>
+        <div class="stat-row"><span>Disk</span><span class="v">61%</span></div><div class="bar"><i style="width:61%"></i></div>
+        <div class="stat-row"><span>Network</span><span class="v">95%</span></div><div class="bar"><i style="width:95%"></i></div>
+      </div>
+      <div class="panel" style="margin-bottom:10px"><h3>Plantas</h3><div id="plant-list"></div></div>
+      <div class="panel">
+        <h3>Ambiente</h3>
+        <div class="stat-row"><span>Irradiancia</span><span class="v" id="e-irr">910</span></div>
+        <div class="stat-row"><span>T. módulo</span><span class="v" id="e-mod">48.2°</span></div>
+        <div class="stat-row"><span>T. ambiente</span><span class="v" id="e-amb">31.0°</span></div>
+        <div class="stat-row"><span>Viento</span><span class="v" id="e-wind">4.2 m/s</span></div>
+        <div class="stat-row"><span>Soiling</span><span class="v" id="e-soil">8%</span></div>
+      </div>
+    </aside>
+    <main>
+      <div class="panel synoptic">
+        <div class="synoptic-title">PROCESS SYNOPTIC · PLANTA SOLAR</div>
+        <div class="synoptic-canvas"><div class="flow" id="flow-nodes"></div></div>
+      </div>
+      <div class="kpi-strip" id="kpis"></div>
+      <div class="charts">
+        <div class="panel"><h3>Potencia instantánea</h3><div class="chart-box"><canvas id="c-power"></canvas></div></div>
+        <div class="panel"><h3>Irradiancia vs producción</h3><div class="chart-box"><canvas id="c-irr"></canvas></div></div>
+      </div>
+    </main>
+    <aside class="side-r">
+      <div class="panel" style="margin-bottom:10px"><h3>Alarmas activas</h3><div id="alarms"></div></div>
+      <div class="panel" style="margin-bottom:10px"><h3>Detalle equipo</h3><div id="detail" style="font-size:0.8rem;color:var(--muted)">Selecciona un nodo del sinóptico</div></div>
+      <div class="panel"><h3>JARVIS Terminal</h3><div class="term" id="term"></div></div>
+    </aside>
+  </div>
+  <nav class="bottom-nav">
+    <span class="active">SYNOPTIC</span>
+    <a href="monitor.html">MONITOR</a>
+    <a href="industrial-3d.html">3D PLANT</a>
+    <a href="admin.html">ADMIN</a>
+    <a href="index.html">LANDING</a>
+  </nav>
+  <script src="js/mock-data.js"></script>
+  <script>
+    let selectedPlant = 'PLT-001';
+    let powerChart, irrChart;
+    function clock() {
+      document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false });
+    }
+    setInterval(clock, 1000); clock();
+    function badge(s) {
+      return { NORMAL: 's-normal', ADVERTENCIA: 's-warn', FALLA: 's-fault', CRITICO: 's-crit' }[s] || '';
+    }
+    function renderPlants() {
+      document.getElementById('plant-list').innerHTML = AEROVOLT.plants.map(p =>
+        '<div class="stat-row" style="cursor:pointer" data-id="' + p.id + '">' +
+        '<span>' + AEROVOLT.statusEmoji(p.status) + ' ' + p.name + '</span>' +
+        '<span class="v">' + p.capacity_kw + ' kW</span></div>'
+      ).join('');
+      document.querySelectorAll('#plant-list .stat-row').forEach(el => {
+        el.onclick = () => { selectedPlant = el.dataset.id; renderAll(); };
+      });
+    }
+    function invs() { return AEROVOLT.inverters.filter(i => i.plantId === selectedPlant); }
+    function renderFlow() {
+      const list = invs();
+      let html = '';
+      list.forEach((inv, i) => {
+        if (i === 3) html += '<div class="pipe-row">━━━━━━ FLUJO DC / AC ━━━━━━</div>';
+        html += '<div class="node" data-id="' + inv.id + '">' +
+          '<div class="icon">⚡</div><div class="id">' + inv.id + '</div>' +
+          '<div class="name">' + inv.sector + '</div>' +
+          '<div class="val">' + inv.power_kw.toFixed(1) + '</div><div class="unit">kW</div>' +
+          '<div class="badge ' + badge(inv.status) + '">' + inv.status + '</div></div>';
+      });
+      document.getElementById('flow-nodes').innerHTML = html;
+      document.querySelectorAll('.node').forEach(n => { n.onclick = () => showDetail(n.dataset.id); });
+    }
+    function renderKPIs() {
+      const list = invs();
+      const p = list.reduce((s, i) => s + i.power_kw, 0);
+      const e = list.reduce((s, i) => s + i.energy_kwh, 0);
+      const online = list.filter(i => i.status !== 'CRITICO').length;
+      const al = AEROVOLT.alarms.filter(a => a.plantId === selectedPlant && a.status === 'ABIERTA').length;
+      document.getElementById('kpis').innerHTML =
+        '<div class="kpi"><div class="l">Potencia</div><div class="v">' + p.toFixed(1) + ' kW</div></div>' +
+        '<div class="kpi"><div class="l">Energía</div><div class="v">' + e.toFixed(0) + ' kWh</div></div>' +
+        '<div class="kpi"><div class="l">Online</div><div class="v">' + online + '/' + list.length + '</div></div>' +
+        '<div class="kpi"><div class="l">Alarmas</div><div class="v">' + al + '</div></div>' +
+        '<div class="kpi"><div class="l">Irradiancia</div><div class="v">' + AEROVOLT.env.irradiance + '</div></div>';
+    }
+    function renderAlarms() {
+      const items = AEROVOLT.alarms.filter(a => a.plantId === selectedPlant && a.status === 'ABIERTA');
+      const el = document.getElementById('alarms');
+      if (!items.length) { el.innerHTML = '<p style="color:var(--muted);font-size:0.8rem">Sin alarmas</p>'; return; }
+      el.innerHTML = items.map(a =>
+        '<div class="alarm-item ' + a.level + '"><strong>' + a.equipmentId + '</strong> · ' + a.level + '<br>' + a.message + '</div>'
+      ).join('');
+    }
+    function renderEnv() {
+      const e = AEROVOLT.env;
+      document.getElementById('e-irr').textContent = e.irradiance;
+      document.getElementById('e-mod').textContent = e.module_temp + '°';
+      document.getElementById('e-amb').textContent = e.ambient_temp + '°';
+      document.getElementById('e-wind').textContent = e.wind_speed + ' m/s';
+      document.getElementById('e-soil').textContent = (e.soiling_index * 100).toFixed(0) + '%';
+    }
+    function showDetail(id) {
+      const inv = AEROVOLT.inverters.find(i => i.id === id);
+      if (!inv) return;
+      document.getElementById('detail').innerHTML =
+        '<div style="color:var(--gold);font-family:Orbitron,sans-serif;margin-bottom:8px">' + inv.id + '</div>' +
+        '<div class="stat-row"><span>Estado</span><span class="v">' + inv.status + '</span></div>' +
+        '<div class="stat-row"><span>Potencia</span><span class="v">' + inv.power_kw + ' kW</span></div>' +
+        '<div class="stat-row"><span>Esperada</span><span class="v">' + inv.expected_kw + ' kW</span></div>' +
+        '<div class="stat-row"><span>PR</span><span class="v">' + AEROVOLT.calcPR(inv) + '%</span></div>' +
+        '<div class="stat-row"><span>DC</span><span class="v">' + inv.dc_v + 'V / ' + inv.dc_a + 'A</span></div>' +
+        '<div class="stat-row"><span>AC</span><span class="v">' + inv.ac_v + 'V / ' + inv.ac_a + 'A</span></div>' +
+        '<div class="stat-row"><span>Comm</span><span class="v">' + inv.last_comm_s + 's</span></div>' +
+        (inv.alarm ? '<p style="color:var(--orange);margin-top:8px">⚠ ' + inv.alarm + '</p>' : '');
+      termLog('Selected ' + inv.id + ' · ' + inv.status + ' · ' + inv.power_kw + ' kW');
+    }
+    const termLines = [];
+    function termLog(msg) {
+      const t = new Date().toLocaleTimeString('es-MX', { hour12: false });
+      termLines.push('<div class="line"><span class="t">[' + t + ']</span> ' + msg + '</div>');
+      if (termLines.length > 12) termLines.shift();
+      document.getElementById('term').innerHTML = termLines.join('');
+    }
+    function initCharts() {
+      const labels = Array.from({ length: 12 }, (_, i) => (8 + i) + ':00');
+      const list = invs();
+      const base = list.reduce((s, i) => s + i.power_kw, 0) / Math.max(list.length, 1);
+      const powerData = labels.map((_, i) => +(base * (0.7 + 0.3 * Math.sin(i / 2)) + Math.random() * 4).toFixed(1));
+      const irrData = labels.map((_, i) => Math.round(200 + 700 * Math.sin((i + 1) / 4) + Math.random() * 30));
+      if (powerChart) powerChart.destroy();
+      if (irrChart) irrChart.destroy();
+      const opts = {
+        responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#8b93a8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.06)' } },
+          y: { ticks: { color: '#8b93a8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.06)' } }
+        }
+      };
+      powerChart = new Chart(document.getElementById('c-power'), {
+        type: 'line',
+        data: { labels, datasets: [{ data: powerData, borderColor: '#d4af37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.35, pointRadius: 0 }] },
+        options: opts
+      });
+      irrChart = new Chart(document.getElementById('c-irr'), {
+        type: 'line',
+        data: { labels, datasets: [
+          { data: irrData, borderColor: '#f5c542', tension: 0.35, pointRadius: 0 },
+          { data: powerData, borderColor: '#00e5ff', tension: 0.35, pointRadius: 0 }
+        ]},
+        options: opts
+      });
+    }
+    function renderAll() {
+      renderPlants(); renderFlow(); renderKPIs(); renderAlarms(); renderEnv(); initCharts();
+    }
+    renderAll();
+    termLog('AEROVOLT Control Center online');
+    termLog('Plant ' + selectedPlant + ' loaded · DEMO mode');
+    termLog('Monitoring only · No remote control');
+    setInterval(() => { AEROVOLT.tick(); renderFlow(); renderKPIs(); renderEnv(); }, 4000);
+  </script>
+</body>
+</html>

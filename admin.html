@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Panel Administrativo</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #05070d; --bg2: #0a0f1a; --card: rgba(12,18,32,0.85);
+      --border: rgba(0,229,255,0.15); --cyan: #00e5ff; --green: #00ff9d;
+      --gold: #f5c542; --text: #e8f0ff; --muted: #8b9bb8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--cyan); text-decoration: none; }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; background: rgba(5,7,13,0.92); border-bottom: 1px solid var(--border);
+    }
+    .brand { font-family: 'Orbitron', sans-serif; font-weight: 700; color: var(--cyan); }
+    .brand span { color: #fff; }
+    .demo-tag { background: var(--gold); color: #001018; font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 999px; margin-left: 8px; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-links a { font-size: 0.8rem; color: var(--muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 999px; }
+    .nav-links a.active, .nav-links a:hover { color: var(--cyan); border-color: var(--cyan); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+    .banner {
+      background: rgba(245,197,66,0.12); border: 1px solid rgba(245,197,66,0.35);
+      color: var(--gold); padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 20px; font-weight: 600;
+    }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab {
+      padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem;
+    }
+    .tab.active { color: var(--cyan); border-color: var(--cyan); background: rgba(0,229,255,0.08); }
+    .card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px; margin-bottom: 16px;
+    }
+    .card h2 { font-family: 'Orbitron', sans-serif; font-size: 1rem; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th { text-align: left; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .btn {
+      display: inline-block; padding: 7px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; margin-right: 6px;
+    }
+    .btn.primary { background: linear-gradient(135deg, var(--cyan), #00b8d4); color: #001018; border: none; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+    input, select {
+      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: rgba(0,0,0,0.3); color: var(--text); font-size: 0.9rem;
+    }
+    .note { font-size: 0.8rem; color: var(--muted); margin-top: 12px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AERO<span>VOLT</span> · Admin <span class="demo-tag">DEMO · FASE TEST</span></div>
+    <nav class="nav-links">
+      <a href="monitor.html">Monitor</a>
+      <a href="industrial-3d.html">Planta 3D</a>
+      <a href="admin.html" class="active">Admin</a>
+      <a href="index.html">Landing</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="banner">⚠ Panel administrativo en modo DEMO. Las acciones de crear/editar/eliminar se simulan en memoria y no persisten en servidor. Multitenancy y permisos reales se implementan en backend.</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="plants">Plantas</button>
+      <button class="tab" data-tab="equipment">Equipos</button>
+      <button class="tab" data-tab="users">Usuarios</button>
+      <button class="tab" data-tab="clients">Clientes / Planes</button>
+      <button class="tab" data-tab="alarms">Alarmas</button>
+    </div>
+    <div class="panel active" id="panel-plants">
+      <div class="card">
+        <h2>Plantas solares</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Nombre</th><th>Ubicación</th><th>Capacidad</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="plants-tbody"></tbody>
+        </table>
+        <p class="note">Crear / editar / eliminar: simulado en DEMO. Backend multi-planta preparado para API.</p>
+      </div>
+      <div class="card">
+        <h2>Nueva planta (demo)</h2>
+        <div class="form-row">
+          <div><label>Nombre</label><input id="np-name" placeholder="Planta Ejemplo" /></div>
+          <div><label>Ubicación</label><input id="np-loc" placeholder="Ciudad, Estado" /></div>
+        </div>
+        <div class="form-row">
+          <div><label>Capacidad (kW)</label><input id="np-cap" type="number" placeholder="500" /></div>
+          <div><label>Sectores (coma)</label><input id="np-sec" placeholder="A, B" /></div>
+        </div>
+        <button class="btn primary" id="btn-add-plant">Agregar (simulado)</button>
+      </div>
+    </div>
+    <div class="panel" id="panel-equipment">
+      <div class="card">
+        <h2>Inversores / equipos</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Planta</th><th>Sector</th><th>Estado</th><th>Potencia</th><th>Acciones</th></tr></thead>
+          <tbody id="eq-tbody"></tbody>
+        </table>
+        <p class="note">Estructura lista para strings, medidores, sensores y trackers. Sin botones de control remoto en MVP.</p>
+      </div>
+    </div>
+    <div class="panel" id="panel-users">
+      <div class="card">
+        <h2>Usuarios y permisos</h2>
+        <table>
+          <thead><tr><th>Usuario</th><th>Rol</th><th>Plantas asignadas</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>admin@aerovolt.ia</td><td>Administrador</td><td>Todas</td><td>Activo</td></tr>
+            <tr><td>ops.norte@cliente.com</td><td>Operador</td><td>PLT-001</td><td>Activo</td></tr>
+            <tr><td>viewer@cliente.com</td><td>Solo lectura</td><td>PLT-002</td><td>Activo</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Separación de clientes: un usuario solo ve plantas asignadas. Implementación real en backend + auth.</p>
+      </div>
+    </div>
+    <div class="panel" id="panel-clients">
+      <div class="card">
+        <h2>Clientes y planes</h2>
+        <table>
+          <thead><tr><th>Cliente</th><th>Plan</th><th>Plantas</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>Demo Norte SA</td><td>AEROVOLT PRO</td><td>1</td><td>Activo</td></tr>
+            <tr><td>Industrial HMO</td><td>Enterprise</td><td>1</td><td>Activo</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Planes comerciales se gestionan junto a Stripe / facturación en fase operativa.</p>
+      </div>
+    </div>
+    <div class="panel" id="panel-alarms">
+      <div class="card">
+        <h2>Gestión de alarmas</h2>
+        <table>
+          <thead><tr><th>ID</th><th>Equipo</th><th>Nivel</th><th>Mensaje</th><th>Estado</th><th>Fecha</th></tr></thead>
+          <tbody id="alm-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="js/mock-data.js"></script>
+  <script>
+    document.querySelectorAll('.tab').forEach(t => {
+      t.onclick = () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+      };
+    });
+    function renderPlants() {
+      document.getElementById('plants-tbody').innerHTML = AEROVOLT.plants.map(p =>
+        '<tr><td>' + p.id + '</td><td>' + p.name + '</td><td>' + p.location + '</td><td>' + p.capacity_kw +
+        ' kW</td><td>' + p.status + '</td><td><button class="btn" disabled title="Backend requerido">Editar</button> <button class="btn" disabled title="Backend requerido">Eliminar</button></td></tr>'
+      ).join('');
+    }
+    function renderEq() {
+      document.getElementById('eq-tbody').innerHTML = AEROVOLT.inverters.map(i =>
+        '<tr><td>' + i.id + '</td><td>' + i.plantId + '</td><td>' + i.sector + '</td><td>' + i.status +
+        '</td><td>' + i.power_kw + ' kW</td><td><button class="btn" disabled title="Backend requerido">Editar</button></td></tr>'
+      ).join('');
+    }
+    function renderAlarms() {
+      document.getElementById('alm-tbody').innerHTML = AEROVOLT.alarms.map(a =>
+        '<tr><td>' + a.id + '</td><td>' + a.equipmentId + '</td><td>' + a.level + '</td><td>' + a.message +
+        '</td><td>' + a.status + '</td><td>' + new Date(a.ts).toLocaleString('es-MX') + '</td></tr>'
+      ).join('');
+    }
+    document.getElementById('btn-add-plant').onclick = () => {
+      const name = document.getElementById('np-name').value.trim();
+      if (!name) { alert('Indica un nombre'); return; }
+      const id = 'PLT-' + String(AEROVOLT.plants.length + 1).padStart(3, '0');
+      AEROVOLT.plants.push({
+        id, name,
+        location: document.getElementById('np-loc').value || '—',
+        capacity_kw: +document.getElementById('np-cap').value || 0,
+        status: 'NORMAL',
+        sectors: (document.getElementById('np-sec').value || 'A').split(',').map(s => s.trim())
+      });
+      renderPlants();
+      alert('Planta agregada en memoria (DEMO). No se guarda en servidor.');
+    };
+    renderPlants(); renderEq(); renderAlarms();
+  </script>
+</body>
+</html>

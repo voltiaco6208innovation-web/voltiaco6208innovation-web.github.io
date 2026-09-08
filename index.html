@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>AEROVOLT.IA — Agentes virtuales & automatización</title>
-  <meta name="description" content="Aerovolt.IA HMO: agentes virtuales, Command, O&M y automatización para PyME. Fase TEST." />
+  <meta name="description" content="Aerovolt.IA HMO: agentes virtuales, Command, O&M, emergencia, visión 17h y térmica. Fase TEST." />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://voltiaco6208innovation-web.github.io/" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#05070b" />
   <meta property="og:title" content="AEROVOLT.IA — Agentes virtuales HMO" />
-  <meta property="og:description" content="Plataforma de IA, automatización, Command y O&M. Fase TEST." />
+  <meta property="og:description" content="Plataforma de IA, automatización, Command, O&M y operación de planta. Fase TEST." />
   <meta property="og:image" content="https://voltiaco6208innovation-web.github.io/logo.svg" />
   <link rel="stylesheet" href="styles.css" />
   <style>
@@ -89,7 +89,7 @@
       <span class="mark">A</span>
       <div>
         <strong>Aerovolt</strong>
-        <small>IA · HMO · Command</small>
+        <small>IA · HMO · O&M</small>
       </div>
     </div>
     <button class="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="false">☰</button>
@@ -97,43 +97,43 @@
       <a href="#inicio">Inicio</a>
       <a href="#paquetes">Paquetes</a>
       <a href="#modulos">Módulos</a>
-      <a href="#starter">Starter</a>
-      <a href="#command">Command</a>
-      <a href="agentes.html">Agentes</a>
       <a href="control-center.html">Control Center</a>
+      <a href="emergency.html">Emergencia</a>
+      <a href="vision.html">Visión 17h</a>
+      <a href="thermal.html">Térmica</a>
     </nav>
     <span class="badge">FASE TEST</span>
   </header>
 
   <main>
-    <div class="banner-test">⚠ Sitio en fase TEST · Demo visual · Sin cobro automático ni SCADA en vivo</div>
+    <div class="banner-test">⚠ Fase TEST · DEMO/FIELD en edge-core · Apagado físico solo con gateway industrial configurado</div>
 
     <section class="hero" id="inicio">
-      <p class="kicker">Primeros clientes · fase TEST</p>
+      <p class="kicker">Operación + comercial · fase TEST</p>
       <h1>Aerovolt</h1>
-      <p class="subbrand">Agentes virtuales & automatización</p>
+      <p class="subbrand">Agentes · Command · O&M integrado</p>
       <p class="lead">
-        ¿Y si tu negocio tuviera su propio equipo digital trabajando 24/7?
-        HMO recibe, explica Command y O&M, recomienda el plan configurado y registra la solicitud.
-        No inventa precios ni capacidades en vivo.
+        Plataforma unificada: HMO comercial, monitoreo, apagado de emergencia (DEMO/FIELD),
+        visión cada 17 h y vista termográfica. Sin inventar SCADA en vivo ni cobros automáticos.
       </p>
       <div class="cta-row">
-        <a class="btn primary" href="#paquetes">Ver paquetes</a>
-        <button type="button" class="btn primary" data-open-agent="demo">Solicitar demo</button>
+        <a class="btn primary" href="control-center.html">Control Center</a>
+        <a class="btn primary" href="emergency.html">Emergencia</a>
+        <a class="btn ghost" href="vision.html">Visión 17h</a>
+        <a class="btn ghost" href="thermal.html">Térmica</a>
         <button type="button" class="btn ghost" data-open-agent="hola">Hablar con HMO</button>
-        <a class="btn ghost" href="https://wa.me/526621042667?text=AEROVOLT" target="_blank" rel="noopener">WhatsApp</a>
       </div>
     </section>
 
     <section id="paquetes" class="panel">
       <h2>Paquetes de lanzamiento</h2>
-      <p class="note">Cupos limitados. Pago anticipado obligatorio antes de abrir consola. La demo es simulación; un humano confirma la oferta comercial.</p>
+      <p class="note">Cupos limitados. La demo es simulación; un humano confirma la oferta comercial.</p>
       <ul class="cards packages" style="list-style:none;padding:0;margin-top:1rem">
         <li>
           <span class="estado disponible">disponible</span>
           <h3>PAQUETE IA</h3>
           <div class="price-tag">$1,200 <small>MXN/mes</small></div>
-          <p>Asistente virtual 24/7 · Atención WhatsApp · Respuestas automáticas · Cupo primeras 10 personas</p>
+          <p>Asistente virtual 24/7 · WhatsApp · Respuestas automáticas</p>
           <div class="cta-row" style="justify-content:flex-start;margin-top:.8rem">
             <a class="btn ghost" href="https://wa.me/526621042667?text=Paquete%20IA" target="_blank" rel="noopener">Apartar</a>
           </div>
@@ -143,7 +143,7 @@
           <span class="estado disponible">disponible</span>
           <h3>AEROVOLT PRO</h3>
           <div class="price-tag">$5,000 <small>MXN</small></div>
-          <p>Todo lo del IA · Agentes autónomos · Flujos + base de datos · Contenido (posts + reels) · Cupo 5 lugares</p>
+          <p>IA + agentes + flujos + contenido · Cupo 5 lugares</p>
           <div class="cta-row" style="justify-content:flex-start;margin-top:.8rem">
             <a class="btn primary" href="https://wa.me/526621042667?text=PRO%205000" target="_blank" rel="noopener">Apartar PRO</a>
           </div>
@@ -152,7 +152,7 @@
           <span class="estado en_implementacion">a la medida</span>
           <h3>ENTERPRISE</h3>
           <div class="price-tag" style="font-size:1.1rem">Cotización</div>
-          <p>Orquestación completa · Integraciones · Soporte prioritario · Ingeniero IA dedicado</p>
+          <p>Orquestación · integraciones · soporte prioritario</p>
           <div class="cta-row" style="justify-content:flex-start;margin-top:.8rem">
             <a class="btn ghost" href="https://wa.me/526621042667?text=Enterprise" target="_blank" rel="noopener">Contactar</a>
           </div>
@@ -162,7 +162,7 @@
 
     <section id="starter" class="panel">
       <h2>Chatbot IA PyME / Starter</h2>
-      <p class="note" id="precio-nota">Precio regular: $2,500 MXN/mes. Promoción 3 días: contratación $1,800 MXN.</p>
+      <p class="note" id="precio-nota">Precio regular: $2,500 MXN/mes. Promo: $1,800 MXN.</p>
       <div class="om-grid">
         <article>
           <h3>Pagas ahora</h3>
@@ -170,64 +170,66 @@
         </article>
         <article>
           <h3>Saldo</h3>
-          <p>$1,080 MXN en $500 + $500 + $80. Total promo: $1,800.</p>
+          <p>$1,080 en $500 + $500 + $80. Total promo $1,800.</p>
         </article>
         <article>
-          <h3>Después de la promo</h3>
-          <p>Lista regular: $2,500 MXN/mes. Stripe aún no cobra solo en esta página.</p>
+          <h3>Después</h3>
+          <p>Regular $2,500 MXN/mes. Stripe no cobra solo en esta página.</p>
         </article>
       </div>
       <div class="cta-row">
-        <button type="button" class="btn primary" data-open-agent="pagar_anticipo">Pagar anticipo $720 MXN</button>
+        <button type="button" class="btn primary" data-open-agent="pagar_anticipo">Pagar anticipo $720</button>
         <button type="button" class="btn ghost" data-open-agent="starter">Que HMO lo explique</button>
       </div>
     </section>
 
     <section id="modulos" class="panel">
-      <h2>Todo el ecosistema en un solo lugar</h2>
-      <p class="lead">Módulos del sitio integrados. Enlaces directos a cada consola (fase TEST / demo).</p>
+      <h2>Ecosistema integrado</h2>
+      <p class="lead">Comercial + operación de planta en la misma plataforma.</p>
       <div class="modules-grid">
         <div class="mod-card">
           <h3>🤖 Agentes HMO</h3>
-          <p>Frente comercial: saluda, explica paquetes, toma leads. Chatbot en el navegador.</p>
-          <div class="links">
-            <a href="agentes.html">Abrir módulo</a>
-            <button type="button" class="btn ghost" style="padding:.35rem .55rem;font-size:.75rem" data-open-agent="hola">Chat aquí</button>
-          </div>
+          <p>Frente comercial y leads.</p>
+          <div class="links"><a href="agentes.html">Abrir</a></div>
         </div>
         <div class="mod-card">
           <h3>🎛 Command</h3>
-          <p>Vista operador. Orquestación humana. Los agentes preparan; no cobran solos.</p>
-          <div class="links">
-            <a href="command.html">Command operador</a>
-          </div>
+          <p>Vista operador (código HMO-COMMAND).</p>
+          <div class="links"><a href="command.html">Abrir</a></div>
         </div>
         <div class="mod-card">
           <h3>⚡ Control Center</h3>
-          <p>Sinóptico, alarmas, terminal JARVIS. Monitoreo operativo de plantas (demo).</p>
+          <p>Sinóptico, alarmas, KPIs.</p>
           <div class="links">
-            <a href="control-center.html">Control Center</a>
+            <a href="control-center.html">Center</a>
             <a href="monitor.html">Monitor</a>
           </div>
         </div>
         <div class="mod-card">
-          <h3>🏭 Planta 3D</h3>
-          <p>Vista industrial 3D de planta fotovoltaica (visualización).</p>
-          <div class="links">
-            <a href="industrial-3d.html">Planta 3D</a>
-          </div>
+          <h3>🛑 Emergencia</h3>
+          <p>Apagado DEMO/FIELD + auditoría.</p>
+          <div class="links"><a href="emergency.html">Abrir</a></div>
         </div>
         <div class="mod-card">
-          <h3>📊 Analytics</h3>
-          <p>Indicadores y analítica de operación (demo).</p>
+          <h3>👁 Visión 17h</h3>
+          <p>Scheduler e inspecciones de suciedad.</p>
+          <div class="links"><a href="vision.html">Abrir</a></div>
+        </div>
+        <div class="mod-card">
+          <h3>🌡 Térmica</h3>
+          <p>Stream HLS/MJPG + overlay IA.</p>
+          <div class="links"><a href="thermal.html">Abrir</a></div>
+        </div>
+        <div class="mod-card">
+          <h3>🏭 Planta 3D</h3>
+          <p>Visualización industrial.</p>
+          <div class="links"><a href="industrial-3d.html">Abrir</a></div>
+        </div>
+        <div class="mod-card">
+          <h3>📊 Analytics / Admin</h3>
+          <p>Indicadores y panel demo.</p>
           <div class="links">
             <a href="analytics.html">Analytics</a>
-          </div>
-        </div>
-        <div class="mod-card">
-          <h3>🛠 Admin</h3>
-          <p>Panel administrativo: plantas, equipos, usuarios (simulado en memoria).</p>
-          <div class="links">
             <a href="admin.html">Admin</a>
           </div>
         </div>
@@ -236,17 +238,19 @@
 
     <section id="command" class="panel">
       <h2>AEROVOLT Command</h2>
-      <p>Orquestación humana. Los agentes preparan; no cobran solos. Código de acceso operador: <strong>HMO-COMMAND</strong>.</p>
+      <p>Orquestación humana. Código operador: <strong>HMO-COMMAND</strong>.</p>
       <ul class="cards" id="caps"></ul>
     </section>
 
     <section id="om" class="panel">
       <h2>O&M fotovoltaico</h2>
-      <p>Expediente planta → activo → inspección declarada. Dron, SCADA y térmica: capacidades futuras o en implementación.</p>
+      <p>Monitoreo, visión 17h, térmica y protocolo de emergencia integrados en edge-core (DEMO por defecto).</p>
       <div class="cta-row">
-        <a class="btn ghost" href="control-center.html">Ir a Control Center</a>
-        <a class="btn ghost" href="monitor.html">Monitor</a>
-        <button type="button" class="btn ghost" data-open-agent="om">Solicitar alcance O&M</button>
+        <a class="btn ghost" href="control-center.html">Control Center</a>
+        <a class="btn ghost" href="emergency.html">Emergencia</a>
+        <a class="btn ghost" href="vision.html">Visión 17h</a>
+        <a class="btn ghost" href="thermal.html">Térmica</a>
+        <button type="button" class="btn ghost" data-open-agent="om">Solicitar alcance</button>
       </div>
     </section>
 
@@ -257,12 +261,13 @@
   </main>
 
   <footer>
-    <p>Aerovolt.IA · Agentes virtuales HMO · fase TEST</p>
+    <p>Aerovolt.IA · HMO + O&M · fase TEST</p>
     <p>WhatsApp <a class="wa-link" href="https://wa.me/526621042667?text=AEROVOLT" target="_blank" rel="noopener">662 104 2667</a></p>
-    <p>GitHub Pages no ejecuta servidor Node. El anticipo se registra aquí; el cobro Stripe queda pendiente de hosting con claves.</p>
+    <p>Edge-core en navegador · FIELD requiere gateway real para corte físico y streams de planta.</p>
   </footer>
 
   <script src="access.js"></script>
   <script src="agent.js"></script>
+  <script src="js/edge-core.js"></script>
 </body>
 </html>

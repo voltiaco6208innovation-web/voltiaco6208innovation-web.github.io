@@ -1,21 +1,18 @@
 # Aerovolt.IA HMO — sitio público (TEST)
 
-Landing unificada + agente H-MO en el navegador + enlaces a todos los módulos.
-
 **URL:** https://voltiaco6208innovation-web.github.io/
 
-## Incluye en la home
-- Hero y CTAs (demo, HMO, WhatsApp)
-- Paquetes IA / PRO / Enterprise
-- Starter PyME ($1,800 promo)
-- Módulos: Agentes, Command, Control Center, Monitor, Planta 3D, Analytics, Admin
-- Chat HMO (agent.js)
+## Integrado
+- Landing comercial + HMO (`agent.js`)
+- Control Center / Monitor / Admin / Analytics / Planta 3D
+- **edge-core** (`js/edge-core.js`): modo DEMO/FIELD, eventos, apagado de emergencia, visión 17h, térmica
+- **emergency.html** — protocolo de apagado + auditoría
+- **vision.html** — scheduler 17h e inspecciones
+- **thermal.html** — stream HLS/MJPG + overlay
 
-## Otras páginas
-- agentes.html
-- command.html
-- control-center.html
-- monitor.html
-- industrial-3d.html
-- analytics.html
-- admin.html
+## Notas
+- DEMO no corta hardware real.
+- FIELD envía orden solo si hay webhook/gateway configurado.
+- Visión usa modelo stub hasta conectar CV real.
+- RTSP requiere gateway → HLS en el navegador.
+- Cyberdeck descartado del alcance.

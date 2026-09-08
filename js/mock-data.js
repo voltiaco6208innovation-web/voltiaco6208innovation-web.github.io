@@ -30,7 +30,7 @@ AEROVOLT.plants = [
 AEROVOLT.inverters = [
   { id: 'INV-01', plantId: 'PLT-001', sector: 'Sector A', name: 'Inversor 01', status: 'NORMAL', expected_kw: 82, power_kw: 78.4, dc_v: 612, dc_a: 128, ac_v: 480, ac_a: 94, energy_kwh: 412.3, freq: 60.01, pf: 0.98, last_comm_s: 3, alarm: null },
   { id: 'INV-02', plantId: 'PLT-001', sector: 'Sector A', name: 'Inversor 02', status: 'NORMAL', expected_kw: 82, power_kw: 80.1, dc_v: 608, dc_a: 131, ac_v: 479, ac_a: 96, energy_kwh: 425.8, freq: 60.00, pf: 0.99, last_comm_s: 2, alarm: null },
-  { id: 'INV-03', plantId: 'PLT-001', sector: 'Sector B', name: 'Inversor 03', status: 'NORMAL', expected_kw: 82, power_kw: 76.9, dc_v: 615, dc_a: 125, ac_v: 481, ac_a: 92, energy_kwh: 398.1, freq: 59.99, pf: 0.97, last_comm_s: 4, alarm: null },
+  { id: 'INV-03', plantId: 'PLT-001', sector: 'Sector B', name: 'Inversor 03', status: 'ADVERTENCIA', expected_kw: 82, power_kw: 76.9, dc_v: 615, dc_a: 125, ac_v: 481, ac_a: 92, energy_kwh: 398.1, freq: 59.99, pf: 0.97, last_comm_s: 4, alarm: 'Sobretemperatura módulo · T.mod 72.5°C > umbral 65°C' },
   { id: 'INV-04', plantId: 'PLT-001', sector: 'Sector B', name: 'Inversor 04', status: 'FALLA', expected_kw: 82, power_kw: 43.2, dc_v: 610, dc_a: 71, ac_v: 480, ac_a: 52, energy_kwh: 210.5, freq: 60.02, pf: 0.95, last_comm_s: 4, alarm: 'Producción inferior a esperada' },
   { id: 'INV-05', plantId: 'PLT-001', sector: 'Sector B', name: 'Inversor 05', status: 'ADVERTENCIA', expected_kw: 82, power_kw: 61.0, dc_v: 590, dc_a: 103, ac_v: 478, ac_a: 73, energy_kwh: 305.2, freq: 60.01, pf: 0.96, last_comm_s: 5, alarm: 'Desviación moderada de potencia' },
   { id: 'INV-06', plantId: 'PLT-002', sector: 'Zona 1', name: 'Inversor 06', status: 'NORMAL', expected_kw: 100, power_kw: 96.2, dc_v: 720, dc_a: 134, ac_v: 480, ac_a: 115, energy_kwh: 520.0, freq: 60.00, pf: 0.99, last_comm_s: 2, alarm: null },
@@ -40,7 +40,7 @@ AEROVOLT.inverters = [
 
 AEROVOLT.env = {
   irradiance: 910,
-  module_temp: 48.2,
+  module_temp: 72.5,
   ambient_temp: 31.0,
   wind_speed: 4.2,
   wind_dir: 220,
@@ -50,6 +50,7 @@ AEROVOLT.env = {
 };
 
 AEROVOLT.alarms = [
+  { id: 'ALM-006', equipmentId: 'INV-03', plantId: 'PLT-001', level: 'ADVERTENCIA', message: 'Sobretemperatura módulo · T.mod 72.5°C > umbral 65°C', value: 72.5, expected: 65, unit: '°C', ts: '2026-09-08T11:55:00Z', status: 'ABIERTA' },
   { id: 'ALM-001', equipmentId: 'INV-04', plantId: 'PLT-001', level: 'FALLA', message: 'Producción inferior a esperada', value: 43.2, expected: 82, unit: 'kW', ts: '2026-09-04T18:12:00Z', status: 'ABIERTA' },
   { id: 'ALM-002', equipmentId: 'INV-05', plantId: 'PLT-001', level: 'ADVERTENCIA', message: 'Desviación moderada de potencia', value: 61.0, expected: 82, unit: 'kW', ts: '2026-09-04T17:45:00Z', status: 'ABIERTA' },
   { id: 'ALM-003', equipmentId: 'INV-07', plantId: 'PLT-002', level: 'ADVERTENCIA', message: 'Producción significativamente por debajo de lo esperado', value: 58.0, expected: 100, unit: 'kW', ts: '2026-09-04T16:30:00Z', status: 'ABIERTA' },
@@ -58,6 +59,7 @@ AEROVOLT.alarms = [
 ];
 
 AEROVOLT.history = [
+  { ts: '2026-09-08T11:55:00Z', type: 'ALARMA', equipmentId: 'INV-03', detail: 'Sobretemperatura módulo · Estado → ADVERTENCIA' },
   { ts: '2026-09-04T18:12:00Z', type: 'ALARMA', equipmentId: 'INV-04', detail: 'Estado → FALLA' },
   { ts: '2026-09-04T17:45:00Z', type: 'ALARMA', equipmentId: 'INV-05', detail: 'Estado → ADVERTENCIA' },
   { ts: '2026-09-04T16:30:00Z', type: 'ALARMA', equipmentId: 'INV-07', detail: 'Estado → ADVERTENCIA' },

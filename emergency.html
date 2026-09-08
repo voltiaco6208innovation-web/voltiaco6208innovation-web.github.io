@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Apagado de emergencia</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050608; --panel: rgba(12,14,20,0.92); --border: rgba(255,59,92,0.35);
+      --gold: #d4af37; --red: #ff3b5c; --text: #e8ecf4; --muted: #8b93a8; --green: #00ff9d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--gold); text-decoration: none; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      padding: 12px 18px; border-bottom: 1px solid rgba(212,175,55,0.25); background: rgba(0,0,0,0.5);
+    }
+    .brand { font-family: Orbitron, sans-serif; color: var(--red); letter-spacing: 0.08em; }
+    .nav a { font-size: 0.78rem; color: var(--muted); border: 1px solid rgba(212,175,55,0.25); padding: 5px 10px; border-radius: 999px; margin-left: 6px; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
+    .banner {
+      background: rgba(255,59,92,0.12); border: 1px solid var(--border); color: var(--red);
+      padding: 12px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 20px; font-weight: 600;
+    }
+    .panel {
+      background: var(--panel); border: 1px solid rgba(212,175,55,0.25); border-radius: 12px; padding: 18px; margin-bottom: 16px;
+    }
+    h1 { font-family: Orbitron, sans-serif; font-size: 1.2rem; margin-bottom: 8px; }
+    label { display: block; font-size: 0.75rem; color: var(--muted); margin: 12px 0 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    input, select, textarea {
+      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(212,175,55,0.25);
+      background: rgba(0,0,0,0.35); color: var(--text); font: inherit;
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+    button {
+      font: inherit; font-weight: 700; padding: 12px 18px; border-radius: 8px; cursor: pointer; border: none;
+    }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid rgba(212,175,55,0.35); color: var(--text); }
+    .mode { font-size: 0.8rem; color: var(--muted); }
+    .mode strong { color: var(--gold); }
+    .log { font-size: 0.8rem; max-height: 280px; overflow: auto; }
+    .log div { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .ok { color: var(--green); }
+    .bad { color: var(--red); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AEROVOLT · EMERGENCY</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="control-center.html">Control Center</a>
+      <a href="vision.html">Visión 17h</a>
+      <a href="thermal.html">Térmica</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="banner">Protocolo de apagado de emergencia. En DEMO solo simula. En FIELD requiere gateway industrial (Modbus/MQTT/relevador) configurado.</div>
+    <div class="panel">
+      <h1>Orden de apagado</h1>
+      <p class="mode">Modo actual: <strong id="mode-label">—</strong>
+        <button type="button" class="btn-ghost" id="toggle-mode" style="padding:4px 10px;font-size:0.75rem;margin-left:8px">Cambiar DEMO/FIELD</button>
+      </p>
+      <label>Planta</label>
+      <select id="plant">
+        <option value="PLT-001">PLT-001 · Norte Culiacán</option>
+        <option value="PLT-002">PLT-002 · Industrial HMO</option>
+      </select>
+      <label>Equipo</label>
+      <select id="equip">
+        <option value="ALL">Toda la planta</option>
+        <option value="INV-01">INV-01</option>
+        <option value="INV-04">INV-04</option>
+        <option value="INV-08">INV-08</option>
+      </select>
+      <label>Motivo</label>
+      <textarea id="reason" rows="2">Emergencia operador — protección de equipo</textarea>
+      <label>Webhook gateway (solo FIELD)</label>
+      <input id="webhook" placeholder="https://gateway-planta.local/api/shutdown" />
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;margin-top:14px">
+        <input type="checkbox" id="confirm" style="width:auto" />
+        Confirmo que esta orden es intencional
+      </label>
+      <div class="row">
+        <button type="button" class="btn-danger" id="btn-sd">EJECUTAR APAGADO</button>
+      </div>
+      <p id="result" style="margin-top:14px;font-size:0.9rem"></p>
+    </div>
+    <div class="panel">
+      <h1>Auditoría</h1>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+  <script src="js/mock-data.js"></script>
+  <script src="js/edge-core.js"></script>
+  <script>
+    const E = AEROVOLT_EDGE;
+    function refreshMode() {
+      document.getElementById('mode-label').textContent = E.mode;
+    }
+    function renderLog() {
+      const items = E.listShutdowns();
+      document.getElementById('log').innerHTML = items.length
+        ? items.map(r => '<div><strong>' + r.at + '</strong> · ' + r.status +
+            ' · ' + r.plantId + '/' + r.equipmentId + '<br><span style="color:var(--muted)">' +
+            (r.detail || r.reason) + '</span></div>').join('')
+        : '<div style="color:var(--muted)">Sin órdenes aún</div>';
+    }
+    document.getElementById('toggle-mode').onclick = function () {
+      E.setMode(E.mode === 'DEMO' ? 'FIELD' : 'DEMO');
+      refreshMode();
+    };
+    document.getElementById('btn-sd').onclick = async function () {
+      const confirm = document.getElementById('confirm').checked;
+      const wh = document.getElementById('webhook').value.trim();
+      if (wh) E.configureIndustrial({ webhookUrl: wh });
+      const res = await E.emergencyShutdown({
+        plantId: document.getElementById('plant').value,
+        equipmentId: document.getElementById('equip').value,
+        reason: document.getElementById('reason').value,
+        confirm: confirm,
+        operator: 'WEB-OPERATOR'
+      });
+      const el = document.getElementById('result');
+      if (res.ok) {
+        el.className = 'ok';
+        el.textContent = 'OK · ' + res.record.status + ' · ' + (res.record.detail || '');
+      } else {
+        el.className = 'bad';
+        el.textContent = 'Error · ' + (res.error || (res.record && res.record.detail) || 'falló');
+      }
+      renderLog();
+    };
+    refreshMode();
+    renderLog();
+  </script>
+</body>
+</html>

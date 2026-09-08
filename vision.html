@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Visión 17h</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060a12; --panel: rgba(14,20,36,0.92); --border: rgba(212,175,55,0.28);
+      --gold: #d4af37; --cyan: #00e5ff; --text: #e8f0ff; --muted: #8b9bb8; --green: #00ff9d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--gold); text-decoration: none; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      padding: 12px 18px; border-bottom: 1px solid var(--border); background: rgba(5,8,16,0.95);
+    }
+    .brand { font-family: Orbitron, sans-serif; color: var(--gold); }
+    .nav a { font-size: 0.78rem; color: var(--muted); border: 1px solid var(--border); padding: 5px 10px; border-radius: 999px; margin-left: 6px; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+    .banner {
+      background: rgba(212,175,55,0.1); border: 1px solid var(--border); color: var(--gold);
+      padding: 12px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 20px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px;
+    }
+    h1, h2 { font-family: Orbitron, sans-serif; font-size: 1rem; margin-bottom: 10px; color: var(--gold); }
+    .kpi { font-size: 1.4rem; font-weight: 700; color: var(--cyan); }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    button {
+      font: inherit; font-weight: 600; padding: 10px 14px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--gold); color: #111; margin-top: 12px; margin-right: 8px;
+    }
+    button.ghost { background: transparent; color: var(--text); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 10px; }
+    th { text-align: left; color: var(--muted); font-size: 0.7rem; text-transform: uppercase; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; background: rgba(0,255,157,0.12); color: var(--green); }
+    .tag.warn { background: rgba(245,197,66,0.15); color: #f5c542; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AEROVOLT · VISIÓN 17h</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="control-center.html">Control Center</a>
+      <a href="emergency.html">Emergencia</a>
+      <a href="thermal.html">Térmica</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="banner">Scheduler de inspección cada 17 horas. DEMO genera inferencia sintética. Para producción: sustituir stub por modelo CV real y cron/systemd en servidor de planta.</div>
+    <div class="grid">
+      <div class="panel">
+        <h1>Temporizador</h1>
+        <p class="muted">Intervalo</p>
+        <div class="kpi" id="interval">17 h</div>
+        <p class="muted" style="margin-top:12px">Última corrida</p>
+        <div id="last">—</div>
+        <p class="muted" style="margin-top:12px">Próxima</p>
+        <div id="next">—</div>
+        <p class="muted" style="margin-top:12px">Modelo</p>
+        <div id="model">—</div>
+        <button type="button" id="run-now">Ejecutar inspección ahora</button>
+        <button type="button" class="ghost" id="toggle-sched">Activar / pausar</button>
+      </div>
+      <div class="panel">
+        <h1>Estado del scheduler</h1>
+        <p id="sched-status" class="muted">Cargando…</p>
+        <p style="margin-top:12px;font-size:0.85rem;color:var(--muted)">El navegador revisa cada 60 s si toca correr (persiste en localStorage). En campo real usar timer del servidor.</p>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <h2>Registros de inspección</h2>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Planta</th><th>Labels</th><th>Score</th><th>Fuente</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="js/edge-core.js"></script>
+  <script>
+    const V = AEROVOLT_EDGE.vision;
+    function refresh() {
+      const c = V.getConfig();
+      document.getElementById('interval').textContent = ((c.intervalMs || 0) / 3600000).toFixed(0) + ' h';
+      document.getElementById('last').textContent = c.lastRun || 'Nunca';
+      document.getElementById('next').textContent = c.nextRun || '—';
+      document.getElementById('model').textContent = c.model;
+      document.getElementById('sched-status').textContent = c.enabled
+        ? 'Scheduler activo · modo ' + AEROVOLT_EDGE.mode
+        : 'Scheduler pausado';
+      const list = V.list();
+      document.getElementById('rows').innerHTML = list.length
+        ? list.map(r => {
+            const warn = r.labels && r.labels.indexOf('limpio') === -1;
+            return '<tr><td>' + r.at + '</td><td>' + r.plantId + '</td><td><span class="tag' +
+              (warn ? ' warn' : '') + '">' + (r.labels || []).join(', ') + '</span></td><td>' +
+              r.score + '</td><td>' + r.source + '</td></tr>';
+          }).join('')
+        : '<tr><td colspan="5" style="color:var(--muted)">Sin inspecciones</td></tr>';
+    }
+    document.getElementById('run-now').onclick = function () {
+      V.runNow();
+      refresh();
+    };
+    document.getElementById('toggle-sched').onclick = function () {
+      const c = V.getConfig();
+      V.setConfig({ enabled: !c.enabled });
+      if (!c.enabled) V.startScheduler();
+      refresh();
+    };
+    V.startScheduler();
+    refresh();
+    setInterval(refresh, 15000);
+  </script>
+</body>
+</html>

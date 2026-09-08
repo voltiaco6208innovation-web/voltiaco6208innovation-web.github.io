@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Video termográfico</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #05070d; --panel: rgba(12,18,32,0.9); --border: rgba(0,229,255,0.2);
+      --cyan: #00e5ff; --gold: #d4af37; --text: #e8f0ff; --muted: #8b9bb8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--gold); text-decoration: none; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      padding: 12px 18px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.55);
+    }
+    .brand { font-family: Orbitron, sans-serif; color: var(--cyan); }
+    .nav a { font-size: 0.78rem; color: var(--muted); border: 1px solid var(--border); padding: 5px 10px; border-radius: 999px; margin-left: 6px; }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 20px 16px 50px; }
+    .banner {
+      background: rgba(0,229,255,0.08); border: 1px solid var(--border); color: var(--cyan);
+      padding: 12px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 16px;
+    }
+    .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+    }
+    h1 { font-family: Orbitron, sans-serif; font-size: 0.95rem; color: var(--gold); margin-bottom: 10px; }
+    .stage {
+      aspect-ratio: 16/10; background: #0a1018; border: 1px solid var(--border); border-radius: 10px;
+      display: grid; place-items: center; position: relative; overflow: hidden;
+    }
+    .stage video, .stage img { width: 100%; height: 100%; object-fit: contain; background: #000; }
+    .placeholder { text-align: center; color: var(--muted); padding: 20px; font-size: 0.9rem; }
+    .heatmap {
+      position: absolute; inset: 0; opacity: 0.35; pointer-events: none;
+      background: radial-gradient(circle at 30% 40%, rgba(255,80,0,0.7), transparent 40%),
+                  radial-gradient(circle at 70% 60%, rgba(255,200,0,0.5), transparent 35%),
+                  linear-gradient(180deg, rgba(0,40,80,0.2), rgba(0,0,0,0.5));
+    }
+    label { display: block; font-size: 0.72rem; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    input, select {
+      width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border);
+      background: rgba(0,0,0,0.35); color: var(--text); font: inherit;
+    }
+    button {
+      margin-top: 12px; font: inherit; font-weight: 700; padding: 10px 14px; border-radius: 8px;
+      border: none; background: var(--cyan); color: #001018; cursor: pointer;
+    }
+    .hotspots { margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
+    .hotspots li { margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AEROVOLT · TÉRMICA</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="control-center.html">Control Center</a>
+      <a href="vision.html">Visión 17h</a>
+      <a href="emergency.html">Emergencia</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="banner">Interfaz de streaming termográfico. DEMO muestra placeholder + overlay IA simulado. FIELD: pega URL HLS/MJPG (o gateway que convierta RTSP).</div>
+    <div class="layout">
+      <div class="panel">
+        <h1>Vista en vivo</h1>
+        <div class="stage" id="stage">
+          <div class="placeholder" id="ph">Sin stream configurado<br><small>Modo DEMO · overlay simulado disponible</small></div>
+          <video id="vid" playsinline controls style="display:none"></video>
+          <div class="heatmap" id="overlay" hidden></div>
+        </div>
+        <ul class="hotspots" id="hots">
+          <li>Hotspot A · 68.2 °C · string 3 (simulado)</li>
+          <li>Hotspot B · 54.1 °C · caja conexiones (simulado)</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h1>Configuración de stream</h1>
+        <label>Protocolo</label>
+        <select id="proto">
+          <option value="HLS">HLS</option>
+          <option value="MJPG">MJPG</option>
+          <option value="RTSP">RTSP (vía gateway)</option>
+        </select>
+        <label>URL de stream (HLS/MJPG)</label>
+        <input id="url" placeholder="https://gateway/stream.m3u8" />
+        <label>RTSP origen (referencia)</label>
+        <input id="rtsp" placeholder="rtsp://camara-termica:554/stream" />
+        <label style="display:flex;gap:8px;align-items:center;text-transform:none">
+          <input type="checkbox" id="ai" checked style="width:auto" /> Overlay IA / hotspots
+        </label>
+        <button type="button" id="save">Guardar y aplicar</button>
+        <button type="button" id="demo" style="background:transparent;border:1px solid var(--border);color:var(--text);margin-left:6px">Solo DEMO overlay</button>
+        <p style="margin-top:14px;font-size:0.8rem;color:var(--muted)">El navegador no reproduce RTSP nativo. En planta usa gateway (MediaMTX/FFmpeg) → HLS.</p>
+      </div>
+    </div>
+  </div>
+  <script src="js/edge-core.js"></script>
+  <script>
+    const T = AEROVOLT_EDGE.thermal;
+    const vid = document.getElementById('vid');
+    const ph = document.getElementById('ph');
+    const overlay = document.getElementById('overlay');
+
+    function apply(cfg) {
+      document.getElementById('proto').value = cfg.protocol || 'HLS';
+      document.getElementById('url').value = cfg.url || '';
+      document.getElementById('rtsp').value = cfg.rtspUrl || '';
+      document.getElementById('ai').checked = cfg.overlayAi !== false;
+      overlay.hidden = !document.getElementById('ai').checked;
+
+      if (cfg.url) {
+        ph.style.display = 'none';
+        vid.style.display = 'block';
+        vid.src = cfg.url;
+        vid.play().catch(function () {});
+      } else {
+        vid.removeAttribute('src');
+        vid.style.display = 'none';
+        ph.style.display = 'grid';
+        ph.innerHTML = 'Sin stream configurado<br><small>Modo ' + AEROVOLT_EDGE.mode + ' · overlay ' +
+          (cfg.overlayAi !== false ? 'ON' : 'OFF') + '</small>';
+      }
+    }
+
+    document.getElementById('save').onclick = function () {
+      const cfg = T.setConfig({
+        protocol: document.getElementById('proto').value,
+        url: document.getElementById('url').value.trim(),
+        rtspUrl: document.getElementById('rtsp').value.trim(),
+        overlayAi: document.getElementById('ai').checked,
+        enabled: true
+      });
+      apply(cfg);
+    };
+    document.getElementById('demo').onclick = function () {
+      const cfg = T.setConfig({ url: '', overlayAi: true, enabled: true });
+      apply(cfg);
+      overlay.hidden = false;
+    };
+    apply(T.getConfig());
+  </script>
+</body>
+</html>

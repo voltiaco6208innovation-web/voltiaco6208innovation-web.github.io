@@ -1,1 +1,289 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · HMI Mimic (DEMO)</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #3a3d42; --panel: #2e3136; --border: #5a5e66; --gold: #d4af37;
+      --green: #22c55e; --yellow: #eab308; --red: #ef4444; --off: #6b7280;
+      --text: #e8ecf4; --muted: #9ca3af; --pipe: #4b9cd3;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    a { color: var(--gold); text-decoration: none; }
+    .area-nav { display: flex; flex-wrap: wrap; background: #1f2226; border-bottom: 2px solid #111; }
+    .area-nav a, .area-nav span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 10px 14px; color: #c5cad3; border-right: 1px solid #333; cursor: pointer; background: #2a2e34; }
+    .area-nav a:hover, .area-nav span.active { background: #3d4654; color: #fff; }
+    .area-nav .brand-slot { background: #0d47a1; color: #fff; font-family: Orbitron, sans-serif; letter-spacing: 0.1em; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 12px; background: #1a1d21; border-bottom: 1px solid #000; font-size: 0.75rem; }
+    .demo-tag { background: var(--gold); color: #111; font-weight: 800; padding: 2px 8px; border-radius: 3px; font-size: 0.65rem; }
+    .mode-tag { background: #374151; color: #fbbf24; font-weight: 700; padding: 2px 8px; border-radius: 3px; font-size: 0.65rem; }
+    .mimic-banner { background: #422006; border: 1px solid #b45309; color: #fcd34d; text-align: center; padding: 6px 10px; font-size: 0.78rem; font-weight: 600; }
+    .workspace { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .mimic-wrap { position: relative; flex: 1; background: #4a4e55; overflow: auto; min-height: 480px; }
+    .mimic-svg { width: 100%; min-height: 520px; display: block; }
+    .tag-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; fill: #111; font-weight: 700; }
+    .tag-value { font-family: 'Share Tech Mono', monospace; font-size: 12px; fill: #0a0a0a; font-weight: 700; }
+    .equip-box { stroke: #111; stroke-width: 1.5; }
+    .flow-line { stroke: var(--pipe); stroke-width: 4; fill: none; }
+    .anim-flow { stroke-dasharray: 8 6; animation: dash 1.2s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -28; } }
+    .acil-stop { position: absolute; right: 16px; top: 16px; z-index: 20; width: 88px; height: 88px; border-radius: 50%; border: 4px solid #7f1d1d; background: radial-gradient(circle at 35% 30%, #f87171, #b91c1c 55%, #7f1d1d); color: #fff; font-family: Orbitron, sans-serif; font-size: 0.7rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.15; text-decoration: none; }
+    .alarm-bar { background: #111; border-top: 2px solid #000; max-height: 140px; overflow: auto; font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; }
+    .alarm-bar table { width: 100%; border-collapse: collapse; }
+    .alarm-bar th { background: #1e3a5f; color: #e0f2fe; text-align: left; padding: 4px 8px; font-weight: 600; position: sticky; top: 0; }
+    .alarm-bar td { padding: 3px 8px; border-bottom: 1px solid #222; color: #e5e7eb; }
+    .alarm-bar tr.sev-CRITICO td, .alarm-bar tr.sev-FALLA td { color: #fca5a5; }
+    .alarm-bar tr.sev-ADVERTENCIA td { color: #fde68a; }
+    .alarm-bar .unack { color: #f87171; font-weight: 700; }
+    .alarm-bar .ack { color: #86efac; }
+    .alarm-actions { display: flex; gap: 8px; padding: 4px 8px; background: #1a1d21; border-top: 1px solid #333; align-items: center; flex-wrap: wrap; }
+    .alarm-actions button { font: inherit; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border: 1px solid #555; background: #333; color: #eee; cursor: pointer; border-radius: 3px; }
+    .alarm-actions button.primary { background: #1e40af; border-color: #3b82f6; }
+    .alarm-actions .clock { margin-left: auto; color: var(--muted); }
+    .bottom-links { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 10px; background: #1a1d21; border-top: 1px solid #000; font-size: 0.7rem; }
+    .bottom-links a { padding: 4px 10px; border: 1px solid #444; border-radius: 3px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <nav class="area-nav" id="area-nav">
+    <span class="brand-slot">AEROVOLT HMI</span>
+    <span class="active" data-area="all">Sinóptico</span>
+    <span data-area="dc">Entrada DC</span>
+    <span data-area="inv">Inversión</span>
+    <span data-area="ac">Media Tensión</span>
+    <span data-area="aux">Auxiliares</span>
+    <a href="#alarms">Alarmas</a>
+    <a href="analytics.html">Reportes</a>
+    <a href="emergency.html">Emergencia</a>
+    <a href="vision.html">Visión 17h</a>
+    <a href="thermal.html">Térmica</a>
+  </nav>
+  <div class="topbar">
+    <div>
+      <strong style="font-family:Orbitron,sans-serif;letter-spacing:0.08em;color:var(--gold)">CONTROL CENTER · PROCESS MIMIC</strong>
+      <span style="color:var(--muted);margin-left:8px">PLT-001 Norte Culiacán</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="demo-tag">DEMO · FASE TEST</span>
+      <span class="mode-tag" id="mode-label">MODO: DEMO</span>
+      <span id="clock">--:--:--</span>
+      <a href="index.html" style="color:var(--muted)">Landing</a>
+      <a href="control-center.html" style="color:var(--muted)">Control Center clásico</a>
+    </div>
+  </div>
+  <div class="mimic-banner">Diagrama de proceso en modo DEMO — Datos representativos locales. No representa el control remoto de una planta real activa.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;padding:6px 12px;background:#1a1d21;border-bottom:1px solid #000;font-family:Share Tech Mono,monospace;font-size:0.72rem;align-items:center">
+    <span style="color:#9ca3af">GATEWAY EDGE (SIMULADOR READ_ONLY)</span>
+    <span style="color:#86efac">Modbus/TCP: CONNECTED (READ_ONLY)</span>
+    <span style="color:#86efac">MQTT Broker: ONLINE</span>
+    <span style="color:#fcd34d">Telemetría sintética · sin escritura física</span>
+  </div>
+  <div class="workspace">
+    <div class="mimic-wrap">
+      <a class="acil-stop" href="emergency.html" title="Parada de emergencia">ACIL<br>STOP</a>
+      <svg class="mimic-svg" viewBox="0 0 1100 560" xmlns="http://www.w3.org/2000/svg" id="mimic-canvas">
+        <rect width="1100" height="560" fill="#4a4e55"/>
+        <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#3f434a" stroke-width="0.5"/>
+          </pattern>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#4b9cd3"/>
+          </marker>
+        </defs>
+        <rect width="1100" height="560" fill="url(#grid)"/>
+        <text x="20" y="28" fill="#d4af37" font-family="Orbitron,sans-serif" font-size="14" letter-spacing="2">PROCESS SYNOPTIC · PLANTA FV · DEMO</text>
+        <text x="40" y="58" fill="#9ca3af" font-size="11" font-weight="700">CAMPO SOLAR (DC)</text>
+        <g id="strings">
+          <rect class="equip-box" x="30" y="70" width="70" height="40" rx="3" fill="#1e3a5f"/>
+          <rect class="equip-box" x="30" y="118" width="70" height="40" rx="3" fill="#1e3a5f"/>
+          <rect class="equip-box" x="30" y="166" width="70" height="40" rx="3" fill="#1e3a5f"/>
+          <text x="65" y="94" text-anchor="middle" class="tag-label" fill="#e0f2fe">STR-A1</text>
+          <text x="65" y="142" text-anchor="middle" class="tag-label" fill="#e0f2fe">STR-A2</text>
+          <text x="65" y="190" text-anchor="middle" class="tag-label" fill="#e0f2fe">STR-B1</text>
+        </g>
+        <rect class="equip-box" x="130" y="110" width="80" height="70" rx="4" fill="#2563eb"/>
+        <text x="170" y="140" text-anchor="middle" class="tag-label" fill="#fff">COMB</text>
+        <text x="170" y="158" text-anchor="middle" class="tag-label" fill="#bfdbfe">CB-01</text>
+        <rect class="equip-box" x="130" y="200" width="80" height="36" rx="3" fill="#374151"/>
+        <text x="170" y="222" text-anchor="middle" class="tag-label" fill="#e5e7eb">TRQ-01</text>
+        <path class="flow-line anim-flow" d="M100 90 H120 V145 H130" marker-end="url(#arrow)"/>
+        <path class="flow-line anim-flow" d="M100 138 H130"/>
+        <path class="flow-line anim-flow" d="M100 186 H120 V145"/>
+        <path class="flow-line anim-flow" d="M210 145 H250" marker-end="url(#arrow)"/>
+        <rect x="40" y="230" width="100" height="36" rx="2" fill="#e5e7eb"/>
+        <text x="50" y="246" class="tag-label">FT-001 DC</text>
+        <text x="50" y="260" class="tag-value" id="tag-ft001">— kW</text>
+        <rect x="40" y="272" width="100" height="36" rx="2" fill="#e5e7eb"/>
+        <text x="50" y="288" class="tag-label">LIT-003 SOIL</text>
+        <text x="50" y="302" class="tag-value" id="tag-lit003">— %</text>
+        <text x="280" y="58" fill="#9ca3af" font-size="11" font-weight="700">INVERSORES (GENERACIÓN)</text>
+        <g id="inverters-svg"></g>
+        <path class="flow-line anim-flow" d="M560 160 H620" marker-end="url(#arrow)"/>
+        <path class="flow-line anim-flow" d="M560 230 H600 V200 H620" marker-end="url(#arrow)"/>
+        <text x="650" y="58" fill="#9ca3af" font-size="11" font-weight="700">SUBESTACIÓN (AC)</text>
+        <rect class="equip-box" x="640" y="80" width="160" height="50" rx="4" fill="#0f766e"/>
+        <text x="720" y="100" text-anchor="middle" class="tag-label" fill="#ecfdf5">BARRA AC</text>
+        <text x="720" y="118" text-anchor="middle" class="tag-label" fill="#99f6e4" id="tag-ac-bar">— kW</text>
+        <rect class="equip-box" x="660" y="150" width="50" height="36" rx="2" fill="#4b5563"/>
+        <text x="685" y="172" text-anchor="middle" class="tag-label" fill="#fff">CB-AC1</text>
+        <rect class="equip-box" x="730" y="150" width="50" height="36" rx="2" fill="#4b5563"/>
+        <text x="755" y="172" text-anchor="middle" class="tag-label" fill="#fff">CB-AC2</text>
+        <rect class="equip-box" x="660" y="210" width="120" height="50" rx="3" fill="#e5e7eb"/>
+        <text x="720" y="230" text-anchor="middle" class="tag-label">PM-001 SALIDA</text>
+        <text x="720" y="248" text-anchor="middle" class="tag-value" id="tag-pm001">— kW</text>
+        <path class="flow-line anim-flow" d="M720 130 V150"/>
+        <path class="flow-line anim-flow" d="M720 186 V210"/>
+        <path class="flow-line anim-flow" d="M780 235 H850" marker-end="url(#arrow)"/>
+        <polygon points="850,220 900,235 850,250" fill="#22c55e" stroke="#111" stroke-width="1"/>
+        <text x="910" y="240" class="tag-label" fill="#bbf7d0">RED / V-104</text>
+        <text x="640" y="310" fill="#9ca3af" font-size="11" font-weight="700">AUXILIARES</text>
+        <a href="vision.html"><rect class="equip-box" x="640" y="320" width="110" height="48" rx="4" fill="#7c3aed"/><text x="695" y="340" text-anchor="middle" class="tag-label" fill="#ede9fe">VISIÓN 17h</text><text x="695" y="356" text-anchor="middle" class="tag-label" fill="#c4b5fd">CAM-AI</text></a>
+        <a href="thermal.html"><rect class="equip-box" x="770" y="320" width="110" height="48" rx="4" fill="#b45309"/><text x="825" y="340" text-anchor="middle" class="tag-label" fill="#ffedd5">TÉRMICA</text><text x="825" y="356" text-anchor="middle" class="tag-label" fill="#fdba74">IR-CAM</text></a>
+        <rect class="equip-box" x="640" y="385" width="110" height="40" rx="3" fill="#374151"/>
+        <text x="695" y="410" text-anchor="middle" class="tag-label" fill="#e5e7eb">LS-01 LOGIC</text>
+        <rect x="40" y="340" width="200" height="80" rx="4" fill="#1f2937" stroke="#111"/>
+        <text x="50" y="360" fill="#9ca3af" font-size="10" font-weight="700">AMBIENTE (MOCK)</text>
+        <text x="50" y="380" class="tag-label" fill="#e5e7eb" id="tag-irr">Irr: —</text>
+        <text x="50" y="398" class="tag-label" fill="#e5e7eb" id="tag-tmod">T.mod: —</text>
+        <text x="140" y="380" class="tag-label" fill="#e5e7eb" id="tag-tamb">T.amb: —</text>
+        <text x="140" y="398" class="tag-label" fill="#e5e7eb" id="tag-wind">Viento: —</text>
+        <g transform="translate(40,450)">
+          <rect width="14" height="14" fill="#6b7280"/><text x="20" y="12" fill="#d1d5db" font-size="11">OFF</text>
+          <rect x="60" width="14" height="14" fill="#22c55e"/><text x="80" y="12" fill="#d1d5db" font-size="11">NORMAL</text>
+          <rect x="150" width="14" height="14" fill="#eab308"/><text x="170" y="12" fill="#d1d5db" font-size="11">ADVERTENCIA</text>
+          <rect x="280" width="14" height="14" fill="#ef4444"/><text x="300" y="12" fill="#d1d5db" font-size="11">FALLA / CRÍTICO</text>
+        </g>
+        <text x="550" y="540" text-anchor="middle" fill="#fcd34d" font-size="11" font-weight="600">FIELD desactivado por defecto · Sin gateway Modbus/MQTT real no hay órdenes físicas</text>
+      </svg>
+    </div>
+    <div class="alarm-bar" id="alarms">
+      <table>
+        <thead><tr><th>Hora</th><th>Severidad</th><th>Tag</th><th>Mensaje</th><th>Estado</th></tr></thead>
+        <tbody id="alarm-rows"></tbody>
+      </table>
+      <div class="alarm-actions">
+        <button type="button" class="primary" id="btn-ack">ACK seleccionadas</button>
+        <button type="button" id="btn-ack-all">ACK todas (DEMO)</button>
+        <span style="color:#9ca3af;font-size:0.68rem">Eventos edge-core + mock · sin envío físico</span>
+        <span class="clock" id="alarm-clock"></span>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-links">
+    <a href="monitor.html">Monitor</a>
+    <a href="industrial-3d.html">Planta 3D</a>
+    <a href="admin.html">Admin</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="emergency.html">Emergencia</a>
+    <a href="control-center.html">Control Center</a>
+    <a href="index.html">Landing</a>
+  </div>
+  <script src="js/mock-data.js"></script>
+  <script src="js/edge-core.js"></script>
+  <script>
+    (function () {
+      const plantId = 'PLT-001';
+      const statusFill = { NORMAL: '#22c55e', ADVERTENCIA: '#eab308', FALLA: '#ef4444', CRITICO: '#ef4444', OFF: '#6b7280' };
+      function clock() {
+        const t = new Date().toLocaleTimeString('es-MX', { hour12: false });
+        document.getElementById('clock').textContent = t;
+        document.getElementById('alarm-clock').textContent = t;
+      }
+      setInterval(clock, 1000); clock();
+      function modeLabel() {
+        const m = (window.AEROVOLT_EDGE && AEROVOLT_EDGE.mode) || 'DEMO';
+        document.getElementById('mode-label').textContent = 'MODO: ' + m;
+      }
+      modeLabel();
+      function invs() { return (AEROVOLT.inverters || []).filter(function (i) { return i.plantId === plantId; }); }
+      function renderInverters() {
+        const g = document.getElementById('inverters-svg');
+        const list = invs();
+        let html = '';
+        list.forEach(function (inv, idx) {
+          const x = 260 + (idx % 3) * 100;
+          const y = 70 + Math.floor(idx / 3) * 90;
+          const fill = statusFill[inv.status] || statusFill.OFF;
+          html += '<g data-id="' + inv.id + '"><rect class="equip-box" x="' + x + '" y="' + y + '" width="88" height="70" rx="4" fill="' + fill + '"/><text x="' + (x + 44) + '" y="' + (y + 24) + '" text-anchor="middle" class="tag-label" fill="#111">' + inv.id + '</text><text x="' + (x + 44) + '" y="' + (y + 42) + '" text-anchor="middle" class="tag-value" fill="#111">' + inv.power_kw.toFixed(1) + ' kW</text><text x="' + (x + 44) + '" y="' + (y + 58) + '" text-anchor="middle" class="tag-label" fill="#111">' + inv.status + '</text></g>';
+        });
+        g.innerHTML = html;
+      }
+      function renderTags() {
+        const list = invs();
+        const p = list.reduce(function (s, i) { return s + i.power_kw; }, 0);
+        const e = AEROVOLT.env || {};
+        document.getElementById('tag-ft001').textContent = p.toFixed(1) + ' kW';
+        document.getElementById('tag-lit003').textContent = ((e.soiling_index || 0) * 100).toFixed(0) + ' %';
+        document.getElementById('tag-ac-bar').textContent = p.toFixed(1) + ' kW';
+        document.getElementById('tag-pm001').textContent = p.toFixed(1) + ' kW';
+        document.getElementById('tag-irr').textContent = 'Irr: ' + (e.irradiance || '—');
+        document.getElementById('tag-tmod').textContent = 'T.mod: ' + (e.module_temp || '—') + '°';
+        document.getElementById('tag-tamb').textContent = 'T.amb: ' + (e.ambient_temp || '—') + '°';
+        document.getElementById('tag-wind').textContent = 'Viento: ' + (e.wind_speed || '—') + ' m/s';
+      }
+      const ACK_KEY = 'aerovolt_alarm_ack';
+      function loadAck() { try { return JSON.parse(localStorage.getItem(ACK_KEY) || '{}'); } catch (e) { return {}; } }
+      function saveAck(map) { localStorage.setItem(ACK_KEY, JSON.stringify(map)); }
+      function collectAlarms() {
+        const rows = [];
+        (AEROVOLT.alarms || []).filter(function (a) { return a.plantId === plantId && a.status === 'ABIERTA'; }).forEach(function (a) {
+          rows.push({ id: a.id, ts: a.ts, level: a.level, tag: a.equipmentId, message: a.message, source: 'mock' });
+        });
+        if (window.AEROVOLT_EDGE) {
+          (AEROVOLT_EDGE.listEvents(30) || []).forEach(function (ev) {
+            if (ev.type === 'ALARM' || ev.type === 'SHUTDOWN' || ev.type === 'INSPECTION') {
+              const p = ev.payload || {};
+              rows.push({ id: ev.id, ts: ev.at, level: p.level || (ev.type === 'SHUTDOWN' ? 'CRITICO' : 'ADVERTENCIA'), tag: p.equipmentId || p.inspectionId || ev.type, message: p.message || p.detail || p.reason || ev.type, source: 'edge' });
+            }
+          });
+        }
+        rows.sort(function (a, b) { return String(b.ts).localeCompare(String(a.ts)); });
+        return rows;
+      }
+      function renderAlarms() {
+        const ack = loadAck();
+        const rows = collectAlarms();
+        const tb = document.getElementById('alarm-rows');
+        if (!rows.length) { tb.innerHTML = '<tr><td colspan="5" style="color:#6b7280">Sin alarmas activas (DEMO)</td></tr>'; return; }
+        tb.innerHTML = rows.map(function (r) {
+          const isAck = !!ack[r.id];
+          const t = r.ts ? new Date(r.ts).toLocaleString('es-MX', { hour12: false }) : '—';
+          return '<tr class="sev-' + r.level + '" data-id="' + r.id + '"><td>' + t + '</td><td>' + r.level + '</td><td>' + r.tag + '</td><td>' + r.message + '</td><td class="' + (isAck ? 'ack' : 'unack') + '">' + (isAck ? 'ACK' : 'UNACK') + '</td></tr>';
+        }).join('');
+      }
+      document.getElementById('btn-ack-all').onclick = function () {
+        const ack = loadAck();
+        collectAlarms().forEach(function (r) { ack[r.id] = true; });
+        saveAck(ack);
+        if (window.AEROVOLT_EDGE) AEROVOLT_EDGE.emit('ALARM_ACK', { all: true, at: new Date().toISOString(), mode: 'DEMO' });
+        renderAlarms();
+      };
+      document.getElementById('btn-ack').onclick = function () {
+        const ack = loadAck();
+        collectAlarms().forEach(function (r) { if (!ack[r.id]) ack[r.id] = true; });
+        saveAck(ack);
+        if (window.AEROVOLT_EDGE) AEROVOLT_EDGE.emit('ALARM_ACK', { batch: true, at: new Date().toISOString(), mode: 'DEMO' });
+        renderAlarms();
+      };
+      function refresh() {
+        if (AEROVOLT.tick) AEROVOLT.tick();
+        renderInverters(); renderTags(); renderAlarms(); modeLabel();
+      }
+      renderInverters(); renderTags(); renderAlarms();
+      setInterval(refresh, 4000);
+      document.querySelectorAll('#area-nav span[data-area]').forEach(function (el) {
+        el.onclick = function () {
+          document.querySelectorAll('#area-nav span[data-area]').forEach(function (s) { s.classList.remove('active'); });
+          el.classList.add('active');
+        };
+      });
+    })();
+  </script>
+</body>
+</html>

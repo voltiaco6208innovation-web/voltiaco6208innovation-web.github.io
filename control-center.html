@@ -3,290 +3,576 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AEROVOLT · Control Center</title>
+  <title>AEROVOLT O&M · Control Center</title>
   <meta name="robots" content="noindex" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #050608; --panel: rgba(10, 12, 18, 0.92); --border: rgba(212, 175, 55, 0.28);
-      --gold: #d4af37; --gold2: #f5d76e; --cyan: #00e5ff; --green: #00ff9d;
-      --orange: #ff8c42; --red: #ff3b5c; --text: #e8ecf4; --muted: #8b93a8;
+      --metal-dark: #1a1f2e; --metal-darker: #0f1419; --metal-panel: #242b38;
+      --cyan: #00d4ff; --cyan-glow: rgba(0,212,255,.3);
+      --success: #00e676; --warning: #ffb300; --danger: #ff5252; --deg: #ff8a3d;
+      --text: #e8ecf1; --muted: #a0aec0; --line: rgba(0,212,255,.25);
+      --gold: #FFD700;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh;
-      background-image: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.08) 0%, transparent 55%), linear-gradient(180deg, #050608 0%, #0a0c12 100%);
+    body { font-family: Inter, system-ui, sans-serif; background: var(--metal-darker); color: var(--text); min-height: 100vh; }
+    a { color: var(--cyan); text-decoration: none; }
+    .app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+    @media (max-width: 960px) { .app { grid-template-columns: 1fr; } .side { display: none; } }
+    .side { background: var(--metal-dark); border-right: 1px solid var(--line); padding: 14px 10px; }
+    .side .brand { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+    .mark {
+      width: 30px; height: 30px; display: grid; place-items: center; font-weight: 800; font-size: .8rem;
+      border: 1px solid var(--gold); color: var(--gold);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     }
-    a { color: var(--gold); text-decoration: none; }
+    .side h1 { font-family: Orbitron, sans-serif; font-size: .78rem; letter-spacing: .08em; }
+    .side nav a {
+      display: block; padding: 8px 10px; margin: 2px 0; border-radius: 8px; font-size: .8rem;
+      color: var(--muted); border: 1px solid transparent;
+    }
+    .side nav a:hover, .side nav a.on { color: var(--text); border-color: var(--line); background: rgba(0,212,255,.08); }
+    .side .sub { padding-left: 12px; font-size: .72rem; }
+    .main { display: flex; flex-direction: column; min-width: 0; }
     .topbar {
-      display: flex; align-items: center; justify-content: space-between; padding: 10px 18px;
-      border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+      display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+      padding: 10px 14px; background: var(--metal-dark); border-bottom: 1px solid var(--line);
     }
-    .brand { font-family: 'Orbitron', sans-serif; font-size: 0.95rem; letter-spacing: 0.12em; color: var(--gold); }
-    .brand small { color: var(--muted); letter-spacing: 0.06em; font-size: 0.7rem; display: block; margin-top: 2px; }
-    .top-meta { display: flex; gap: 16px; align-items: center; font-size: 0.75rem; color: var(--muted); flex-wrap: wrap; }
-    .online { color: var(--green); font-weight: 700; }
-    .demo-tag { background: var(--gold); color: #0a0a0a; font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
-    .nav a { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; margin-left: 6px; }
-    .nav a:hover { color: var(--gold); border-color: var(--gold); }
-    .grid {
-      display: grid; grid-template-columns: 220px 1fr 260px; gap: 10px; padding: 10px; min-height: calc(100vh - 52px);
+    .topbar .title { font-family: Orbitron, sans-serif; font-size: .85rem; letter-spacing: .06em; }
+    .live { color: var(--success); font-size: .75rem; font-weight: 700; }
+    .live::before { content: '●'; margin-right: 4px; animation: blink 1.2s infinite; }
+    @keyframes blink { 50% { opacity: .35; } }
+    .stat { font-size: .72rem; color: var(--muted); }
+    .stat b { color: var(--text); font-weight: 600; }
+    .stat.crit b { color: var(--danger); }
+    .topbar select {
+      background: var(--metal-panel); border: 1px solid var(--line); color: var(--text);
+      padding: 5px 8px; border-radius: 6px; font: inherit; font-size: .78rem;
     }
-    @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } .side-l, .side-r { display: none; } }
-    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-    .panel h3 { font-family: 'Orbitron', sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; }
-    .stat-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .stat-row .v { color: var(--gold2); font-weight: 600; }
-    .bar { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin: 4px 0 10px; overflow: hidden; }
-    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 3px; }
-    .synoptic {
-      position: relative; min-height: 420px;
-      background: linear-gradient(rgba(212,175,55,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.03) 1px, transparent 1px), rgba(8,10,14,0.95);
-      background-size: 24px 24px, 24px 24px, auto; overflow: hidden;
+    .content { padding: 12px; display: grid; gap: 12px; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+    .kpi {
+      background: var(--metal-panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px;
     }
-    .synoptic-title {
-      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-      font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: var(--gold); letter-spacing: 0.15em; z-index: 2;
+    .kpi .l { font-size: .62rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .kpi .v { font-family: Orbitron, sans-serif; font-size: 1.05rem; color: var(--cyan); margin-top: 4px; }
+    .kpi .u { font-size: .65rem; color: var(--muted); }
+    .pr-bar { height: 6px; background: #0a0e14; border-radius: 99px; margin-top: 8px; overflow: hidden; }
+    .pr-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--success)); }
+    .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 1100px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--metal-panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px;
     }
-    .synoptic-canvas { width: 100%; min-height: 400px; display: flex; align-items: center; justify-content: center; padding: 40px 20px 20px; }
-    .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 900px; }
+    .panel h2 {
+      font-family: Orbitron, sans-serif; font-size: .78rem; color: var(--cyan);
+      letter-spacing: .05em; margin-bottom: 10px;
+    }
+    .flow {
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center;
+      padding: 8px 0 14px;
+    }
     .node {
-      background: rgba(0,0,0,0.45); border: 1px solid var(--border); border-radius: 8px; padding: 12px 10px;
-      text-align: center; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s;
+      min-width: 88px; text-align: center; padding: 10px 8px; border-radius: 10px;
+      border: 1px solid var(--line); background: rgba(15,20,25,.55); font-size: .72rem; cursor: default;
     }
-    .node:hover, .node.active { border-color: var(--gold); box-shadow: 0 0 18px rgba(212,175,55,0.25); }
-    .node .icon { font-size: 1.6rem; margin-bottom: 4px; }
-    .node .id { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: var(--gold); }
-    .node .name { font-size: 0.7rem; color: var(--muted); margin: 2px 0 6px; }
-    .node .val { font-size: 1.1rem; font-weight: 700; font-family: 'Share Tech Mono', monospace; }
-    .node .unit { font-size: 0.65rem; color: var(--muted); }
-    .node .badge { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; }
-    .s-normal { background: rgba(0,255,157,0.15); color: var(--green); }
-    .s-warn { background: rgba(245,197,66,0.15); color: #f5c542; }
-    .s-fault { background: rgba(255,140,66,0.15); color: var(--orange); }
-    .s-crit { background: rgba(255,59,92,0.15); color: var(--red); }
-    .pipe-row { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; height: 28px; color: var(--gold); opacity: 0.5; font-size: 0.8rem; letter-spacing: 0.3em; }
-    .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
-    @media (max-width: 700px) { .kpi-strip { grid-template-columns: 1fr 1fr; } }
-    .kpi { background: rgba(0,0,0,0.35); border: 1px solid rgba(212,175,55,0.15); border-radius: 6px; padding: 10px; text-align: center; }
-    .kpi .l { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-    .kpi .v { font-family: 'Orbitron', sans-serif; font-size: 1.15rem; color: var(--gold2); margin-top: 2px; }
-    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    @media (max-width: 700px) { .charts { grid-template-columns: 1fr; } }
-    .chart-box { height: 160px; position: relative; }
-    .alarm-item { padding: 8px 10px; margin-bottom: 6px; border-radius: 6px; border-left: 3px solid var(--muted); background: rgba(0,0,0,0.3); font-size: 0.75rem; }
-    .alarm-item.FALLA { border-left-color: var(--orange); }
-    .alarm-item.ADVERTENCIA { border-left-color: #f5c542; }
-    .alarm-item.CRITICO { border-left-color: var(--red); }
-    .term {
-      font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; background: #000;
-      border: 1px solid rgba(0,255,157,0.25); border-radius: 6px; padding: 10px; color: var(--green);
-      min-height: 120px; max-height: 160px; overflow-y: auto;
+    .node .st { font-size: .65rem; margin-top: 4px; }
+    .node.ok .st { color: var(--success); }
+    .node.warn .st { color: var(--warning); }
+    .node.deg .st { color: var(--deg); }
+    .node.fault .st { color: var(--danger); }
+    .node.off .st { color: #718096; }
+    .arrow { color: var(--muted); font-size: .85rem; }
+    .matrix { width: 100%; border-collapse: collapse; font-size: .75rem; font-family: 'Share Tech Mono', monospace; }
+    .matrix th { text-align: center; color: var(--muted); font-size: .65rem; padding: 4px; }
+    .matrix td { text-align: center; padding: 6px 4px; cursor: pointer; }
+    .matrix td:first-child { text-align: left; color: var(--muted); }
+    .matrix td:hover { background: rgba(0,212,255,.08); }
+    .chart-box { height: 200px; position: relative; }
+    .ranges { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+    .ranges button {
+      font: inherit; font-size: .68rem; padding: 4px 8px; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--line); background: transparent; color: var(--muted);
     }
-    .term .line { margin-bottom: 3px; }
-    .term .t { color: var(--muted); }
-    .bottom-nav {
-      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; padding: 8px;
-      border-top: 1px solid var(--border); background: rgba(0,0,0,0.4);
+    .ranges button.on { color: #061018; background: var(--cyan); border-color: var(--cyan); }
+    .env-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: .78rem; }
+    .env-grid div { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .env-grid span { color: var(--muted); }
+    .env-grid b { color: var(--text); }
+    .compare {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px;
     }
-    .bottom-nav a, .bottom-nav span {
-      font-family: 'Orbitron', sans-serif; font-size: 0.65rem; letter-spacing: 0.08em;
-      padding: 8px 14px; border-radius: 4px; border: 1px solid var(--border); color: var(--muted);
+    @media (max-width: 700px) { .compare { grid-template-columns: 1fr 1fr; } }
+    .compare .c { background: rgba(15,20,25,.5); border-radius: 8px; padding: 8px; }
+    .compare .c .l { font-size: .62rem; color: var(--muted); }
+    .compare .c .v { font-size: .95rem; font-weight: 700; margin-top: 2px; }
+    .jarvis {
+      border: 1px solid rgba(0,212,255,.35); background: rgba(0,212,255,.06);
+      border-radius: 10px; padding: 12px; font-size: .85rem; line-height: 1.45;
     }
-    .bottom-nav a:hover, .bottom-nav .active { color: var(--gold); border-color: var(--gold); background: rgba(212,175,55,0.08); }
-    .banner {
-      grid-column: 1 / -1; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.35);
-      color: var(--gold); padding: 8px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-align: center;
+    .jarvis strong { color: var(--cyan); }
+    .jarvis .actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .jarvis button, .btn {
+      font: inherit; font-size: .72rem; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--line); background: var(--metal-darker); color: var(--text);
     }
+    .jarvis button.primary { background: var(--cyan); color: #061018; border-color: var(--cyan); font-weight: 700; }
+    table.data { width: 100%; border-collapse: collapse; font-size: .75rem; }
+    table.data th { text-align: left; color: var(--muted); font-size: .65rem; text-transform: uppercase; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+    table.data td { padding: 7px 4px; border-bottom: 1px solid rgba(255,255,255,.05); }
+    .sev-CRITICAL { color: var(--danger); font-weight: 700; }
+    .sev-HIGH { color: var(--deg); }
+    .sev-MEDIUM { color: var(--warning); }
+    .sev-LOW { color: var(--muted); }
+    .detail {
+      font-size: .8rem; line-height: 1.5;
+    }
+    .detail .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .detail .row span { color: var(--muted); }
+    .mono { font-family: 'Share Tech Mono', monospace; font-size: .78rem; color: var(--muted); }
+    .note { font-size: .72rem; color: var(--muted); margin-top: 8px; }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div>
-      <div class="brand">AEROVOLT // CONTROL CENTER</div>
-      <small>O&amp;M · MONITORING · ING BRAYAN NICHOLS</small>
-    </div>
-    <div class="top-meta">
-      <span class="demo-tag">DEMO · FASE TEST</span>
-      <span class="online">● SYSTEM ONLINE</span>
-      <span id="clock">--:--:--</span>
-      <nav class="nav">
-        <a href="monitor.html">Monitor</a>
-        <a href="industrial-3d.html">Planta 3D</a>
-        <a href="admin.html">Admin</a>
-        <a href="index.html">Landing</a>
+  <div class="app">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1><div class="mono">Commercial platform</div></div></div>
+      <nav>
+        <a class="on" href="#dash">1 · Control Center</a>
+        <a href="#plants">2 · Plantas</a>
+        <div class="sub">
+          <a href="#plants">Planta · Sectores · Inversores</a>
+          <a href="#plants">Strings · Sensores · Grid · Meteo</a>
+        </div>
+        <a href="#synoptic">3 · Synoptic / Planta</a>
+        <div class="sub">
+          <a href="industrial-3d.html">Vista 3D</a>
+          <a href="#synoptic">Flujo energético 2D</a>
+        </div>
+        <a href="#perf">4 · Performance</a>
+        <a href="#env">5 · Environmental</a>
+        <a href="#incidents">6 · Alarmas / Incidentes</a>
+        <a href="#history">7 · Historial</a>
+        <a href="admin.html">8 · Mantenimiento</a>
+        <a href="admin.html">9 · Administración</a>
+        <a href="#jarvis">10 · IA / JARVIS</a>
+        <a href="control.html">Control personal</a>
+        <a href="index.html">Inicio público</a>
       </nav>
+      <p class="note">MVP monitoreo · Sin control remoto de equipos</p>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="title">AEROVOLT O&M</div>
+        <div class="live">LIVE</div>
+        <label class="stat">PLANT
+          <select id="plant-sel"></select>
+        </label>
+        <label class="stat">SECTOR
+          <select id="sector-sel"><option value="ALL">ALL</option></select>
+        </label>
+        <div class="stat">LAST UPDATE: <b id="last-up">--:--:--</b></div>
+        <div class="stat">COMM: <b id="comm-pct">98.7%</b></div>
+        <div class="stat">ALARMS: <b id="alarm-n">0</b></div>
+        <div class="stat crit">CRITICAL: <b id="crit-n">0</b></div>
+        <div style="margin-left:auto" class="stat"><b style="color:var(--cyan)">JARVIS AI</b></div>
+      </header>
+
+      <div class="content">
+        <!-- KPIs -->
+        <section class="kpis" id="dash">
+          <div class="kpi"><div class="l">Plant output</div><div class="v" id="k-out">—</div><div class="u">MW</div></div>
+          <div class="kpi"><div class="l">Today energy</div><div class="v" id="k-today">—</div><div class="u">MWh</div></div>
+          <div class="kpi"><div class="l">Performance ratio</div><div class="v" id="k-pr">—</div><div class="u">%</div><div class="pr-bar"><i id="pr-fill" style="width:90%"></i></div></div>
+          <div class="kpi"><div class="l">Availability</div><div class="v" id="k-av">—</div><div class="u">%</div></div>
+          <div class="kpi"><div class="l">Specific yield</div><div class="v" id="k-y">—</div><div class="u">kWh/kWp</div></div>
+          <div class="kpi"><div class="l">Expected</div><div class="v" id="k-exp">—</div><div class="u">MWh</div></div>
+          <div class="kpi"><div class="l">Loss</div><div class="v" id="k-loss">—</div><div class="u">MWh</div></div>
+          <div class="kpi"><div class="l">CO₂ avoided</div><div class="v" id="k-co2">—</div><div class="u">t</div></div>
+        </section>
+
+        <!-- Real vs expected + JARVIS -->
+        <section class="grid2" id="jarvis">
+          <div class="panel">
+            <h2>Real vs esperado · diagnóstico</h2>
+            <div class="compare">
+              <div class="c"><div class="l">Esperada</div><div class="v" id="cmp-exp">—</div></div>
+              <div class="c"><div class="l">Real</div><div class="v" id="cmp-real">—</div></div>
+              <div class="c"><div class="l">Diferencia</div><div class="v" id="cmp-diff" style="color:var(--danger)">—</div></div>
+              <div class="c"><div class="l">Performance</div><div class="v" id="cmp-pr">—</div></div>
+            </div>
+            <div class="jarvis" id="jarvis-box">
+              <strong>JARVIS</strong>
+              <div id="jarvis-text" style="margin-top:6px"></div>
+              <div class="mono" id="jarvis-impact" style="margin-top:6px"></div>
+              <div style="margin-top:6px" id="jarvis-rec"></div>
+              <div class="actions">
+                <button type="button" class="primary" id="j-ack">ACKNOWLEDGE</button>
+                <button type="button" id="j-wo">CREATE WORK ORDER</button>
+                <button type="button" id="j-tech">DISPATCH TECHNICIAN</button>
+                <button type="button" id="j-eq">VIEW EQUIPMENT</button>
+              </div>
+              <p class="note" id="j-msg"></p>
+            </div>
+          </div>
+          <div class="panel" id="env">
+            <h2>Environmental · weather impact</h2>
+            <div class="env-grid" id="env-grid"></div>
+            <p class="note" id="weather-impact" style="margin-top:10px"></p>
+          </div>
+        </section>
+
+        <!-- Synoptic -->
+        <section class="panel" id="synoptic">
+          <h2>Synoptic · flujo energético</h2>
+          <div class="flow" id="flow"></div>
+          <h2 style="margin-top:8px">Matriz sectores × inversores</h2>
+          <div style="overflow:auto">
+            <table class="matrix" id="matrix"></table>
+          </div>
+        </section>
+
+        <!-- Charts -->
+        <section class="grid2" id="perf">
+          <div class="panel">
+            <h2>Power · DC / AC / Expected</h2>
+            <div class="ranges" id="range-power">
+              <button type="button" data-h="12" class="on">LIVE/12H</button>
+              <button type="button" data-h="6">6H</button>
+              <button type="button" data-h="24">24H</button>
+              <button type="button" data-h="48">7D*</button>
+            </div>
+            <div class="chart-box"><canvas id="c-power"></canvas></div>
+          </div>
+          <div class="panel">
+            <h2>Irradiance vs production</h2>
+            <div class="ranges" id="range-irr">
+              <button type="button" data-h="12" class="on">12H</button>
+              <button type="button" data-h="24">24H</button>
+            </div>
+            <div class="chart-box"><canvas id="c-irr"></canvas></div>
+            <p class="note">Diagnóstico: irradiancia alta con producción baja ⇒ pérdida en cadena (soiling, inverter, grid).</p>
+          </div>
+        </section>
+
+        <!-- Equipment + incidents -->
+        <section class="grid2">
+          <div class="panel" id="plants">
+            <h2>Detalle de equipo</h2>
+            <div class="detail" id="eq-detail">Selecciona un inversor en la matriz.</div>
+          </div>
+          <div class="panel" id="incidents">
+            <h2>Incident center</h2>
+            <div style="overflow:auto;max-height:280px">
+              <table class="data" id="inc-table">
+                <thead>
+                  <tr>
+                    <th>ID</th><th>Sev</th><th>Eq</th><th>Type</th><th>Status</th><th>Loss</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="note">Flujo: DETECT → CLASSIFY → ASSIGN → ACK → INVESTIGATE → CORRECT → VERIFY → CLOSE</p>
+          </div>
+        </section>
+
+        <section class="panel" id="history">
+          <h2>Historial / comunicación</h2>
+          <div style="overflow:auto">
+            <table class="data" id="hist-table">
+              <thead>
+                <tr><th>Equipo</th><th>Comm</th><th>Last</th><th>Latency</th><th>Protocol</th><th>Gateway</th><th>Status</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
-  </header>
-  <div class="grid">
-    <div class="banner">⚠ Datos simulados · No es SCADA en vivo · Preparado para API/MQTT real · Sin control remoto en MVP</div>
-    <aside class="side-l">
-      <div class="panel" style="margin-bottom:10px">
-        <h3>System Status</h3>
-        <div class="stat-row"><span>CPU</span><span class="v">42%</span></div><div class="bar"><i style="width:42%"></i></div>
-        <div class="stat-row"><span>Memory</span><span class="v">58%</span></div><div class="bar"><i style="width:58%"></i></div>
-        <div class="stat-row"><span>Disk</span><span class="v">61%</span></div><div class="bar"><i style="width:61%"></i></div>
-        <div class="stat-row"><span>Network</span><span class="v">95%</span></div><div class="bar"><i style="width:95%"></i></div>
-      </div>
-      <div class="panel" style="margin-bottom:10px"><h3>Plantas</h3><div id="plant-list"></div></div>
-      <div class="panel">
-        <h3>Ambiente</h3>
-        <div class="stat-row"><span>Irradiancia</span><span class="v" id="e-irr">910</span></div>
-        <div class="stat-row"><span>T. módulo</span><span class="v" id="e-mod">48.2°</span></div>
-        <div class="stat-row"><span>T. ambiente</span><span class="v" id="e-amb">31.0°</span></div>
-        <div class="stat-row"><span>Viento</span><span class="v" id="e-wind">4.2 m/s</span></div>
-        <div class="stat-row"><span>Soiling</span><span class="v" id="e-soil">8%</span></div>
-      </div>
-    </aside>
-    <main>
-      <div class="panel synoptic">
-        <div class="synoptic-title">PROCESS SYNOPTIC · PLANTA SOLAR</div>
-        <div class="synoptic-canvas"><div class="flow" id="flow-nodes"></div></div>
-      </div>
-      <div class="kpi-strip" id="kpis"></div>
-      <div class="charts">
-        <div class="panel"><h3>Potencia instantánea</h3><div class="chart-box"><canvas id="c-power"></canvas></div></div>
-        <div class="panel"><h3>Irradiancia vs producción</h3><div class="chart-box"><canvas id="c-irr"></canvas></div></div>
-      </div>
-    </main>
-    <aside class="side-r">
-      <div class="panel" style="margin-bottom:10px"><h3>Alarmas activas</h3><div id="alarms"></div></div>
-      <div class="panel" style="margin-bottom:10px"><h3>Detalle equipo</h3><div id="detail" style="font-size:0.8rem;color:var(--muted)">Selecciona un nodo del sinóptico</div></div>
-      <div class="panel"><h3>JARVIS Terminal</h3><div class="term" id="term"></div></div>
-    </aside>
   </div>
-  <nav class="bottom-nav">
-    <span class="active">SYNOPTIC</span>
-    <a href="monitor.html">MONITOR</a>
-    <a href="industrial-3d.html">3D PLANT</a>
-    <a href="admin.html">ADMIN</a>
-    <a href="index.html">LANDING</a>
-  </nav>
-  <script src="js/mock-data.js"></script>
+
+  <script src="js/om-data.js"></script>
   <script>
-    let selectedPlant = 'PLT-001';
+    const OM = AEROVOLT_OM;
+    let plantId = 'PLT-001';
+    let sector = 'ALL';
     let powerChart, irrChart;
-    function clock() {
-      document.getElementById('clock').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false });
-    }
-    setInterval(clock, 1000); clock();
-    function badge(s) {
-      return { NORMAL: 's-normal', ADVERTENCIA: 's-warn', FALLA: 's-fault', CRITICO: 's-crit' }[s] || '';
-    }
-    function renderPlants() {
-      document.getElementById('plant-list').innerHTML = AEROVOLT.plants.map(p =>
-        '<div class="stat-row" style="cursor:pointer" data-id="' + p.id + '">' +
-        '<span>' + AEROVOLT.statusEmoji(p.status) + ' ' + p.name + '</span>' +
-        '<span class="v">' + p.capacity_kw + ' kW</span></div>'
-      ).join('');
-      document.querySelectorAll('#plant-list .stat-row').forEach(el => {
-        el.onclick = () => { selectedPlant = el.dataset.id; renderAll(); };
+    let selectedInv = null;
+
+    function invList() {
+      return OM.inverters.filter(function (i) {
+        return i.plantId === plantId && (sector === 'ALL' || i.sector === sector);
       });
     }
-    function invs() { return AEROVOLT.inverters.filter(i => i.plantId === selectedPlant); }
-    function renderFlow() {
-      const list = invs();
-      let html = '';
-      list.forEach((inv, i) => {
-        if (i === 3) html += '<div class="pipe-row">━━━━━━ FLUJO DC / AC ━━━━━━</div>';
-        html += '<div class="node" data-id="' + inv.id + '">' +
-          '<div class="icon">⚡</div><div class="id">' + inv.id + '</div>' +
-          '<div class="name">' + inv.sector + '</div>' +
-          '<div class="val">' + inv.power_kw.toFixed(1) + '</div><div class="unit">kW</div>' +
-          '<div class="badge ' + badge(inv.status) + '">' + inv.status + '</div></div>';
-      });
-      document.getElementById('flow-nodes').innerHTML = html;
-      document.querySelectorAll('.node').forEach(n => { n.onclick = () => showDetail(n.dataset.id); });
+
+    function tickClock() {
+      document.getElementById('last-up').textContent = new Date().toLocaleTimeString('es-MX', { hour12: false });
     }
-    function renderKPIs() {
-      const list = invs();
-      const p = list.reduce((s, i) => s + i.power_kw, 0);
-      const e = list.reduce((s, i) => s + i.energy_kwh, 0);
-      const online = list.filter(i => i.status !== 'CRITICO').length;
-      const al = AEROVOLT.alarms.filter(a => a.plantId === selectedPlant && a.status === 'ABIERTA').length;
-      document.getElementById('kpis').innerHTML =
-        '<div class="kpi"><div class="l">Potencia</div><div class="v">' + p.toFixed(1) + ' kW</div></div>' +
-        '<div class="kpi"><div class="l">Energía</div><div class="v">' + e.toFixed(0) + ' kWh</div></div>' +
-        '<div class="kpi"><div class="l">Online</div><div class="v">' + online + '/' + list.length + '</div></div>' +
-        '<div class="kpi"><div class="l">Alarmas</div><div class="v">' + al + '</div></div>' +
-        '<div class="kpi"><div class="l">Irradiancia</div><div class="v">' + AEROVOLT.env.irradiance + '</div></div>';
+
+    function fillPlantSel() {
+      const sel = document.getElementById('plant-sel');
+      sel.innerHTML = OM.plants.map(function (p) {
+        return '<option value="' + p.id + '">' + p.id + ' · ' + p.name + '</option>';
+      }).join('');
+      sel.value = plantId;
     }
-    function renderAlarms() {
-      const items = AEROVOLT.alarms.filter(a => a.plantId === selectedPlant && a.status === 'ABIERTA');
-      const el = document.getElementById('alarms');
-      if (!items.length) { el.innerHTML = '<p style="color:var(--muted);font-size:0.8rem">Sin alarmas</p>'; return; }
-      el.innerHTML = items.map(a =>
-        '<div class="alarm-item ' + a.level + '"><strong>' + a.equipmentId + '</strong> · ' + a.level + '<br>' + a.message + '</div>'
-      ).join('');
+
+    function fillSectorSel() {
+      const p = OM.plants.find(function (x) { return x.id === plantId; });
+      const sel = document.getElementById('sector-sel');
+      sel.innerHTML = '<option value="ALL">ALL</option>' + (p.sectors || []).map(function (s) {
+        return '<option value="' + s + '">Sector ' + s + '</option>';
+      }).join('');
+      sel.value = sector;
     }
+
+    function renderKpis() {
+      const k = OM.plantKpis(plantId);
+      document.getElementById('k-out').textContent = k.outputMW;
+      document.getElementById('k-today').textContent = k.todayEnergyMWh;
+      document.getElementById('k-pr').textContent = k.pr;
+      document.getElementById('pr-fill').style.width = Math.min(100, k.pr) + '%';
+      document.getElementById('k-av').textContent = k.availability;
+      document.getElementById('k-y').textContent = k.specificYield;
+      document.getElementById('k-exp').textContent = k.expectedMWh;
+      document.getElementById('k-loss').textContent = k.lossMWh;
+      document.getElementById('k-co2').textContent = k.co2_t;
+      document.getElementById('cmp-exp').textContent = k.expectedMWh + ' MWh';
+      document.getElementById('cmp-real').textContent = k.todayEnergyMWh + ' MWh';
+      document.getElementById('cmp-diff').textContent = '-' + k.lossMWh + ' MWh';
+      document.getElementById('cmp-pr').textContent = k.pr + '%';
+
+      const open = OM.incidents.filter(function (i) { return i.plantId === plantId && !i.closed; });
+      const crit = open.filter(function (i) { return i.severity === 'CRITICAL'; });
+      document.getElementById('alarm-n').textContent = String(open.length).padStart(2, '0');
+      document.getElementById('crit-n').textContent = String(crit.length).padStart(2, '0');
+
+      const list = OM.inverters.filter(function (i) { return i.plantId === plantId; });
+      const online = list.filter(function (i) { return i.comm !== 'OFFLINE'; }).length;
+      document.getElementById('comm-pct').textContent = (list.length ? ((online / list.length) * 100).toFixed(1) : '0') + '%';
+    }
+
+    function renderJarvis() {
+      const j = OM.jarvisInsight(plantId);
+      document.getElementById('jarvis-text').textContent = j.text;
+      document.getElementById('jarvis-impact').textContent = 'Impacto estimado: ' + j.impact;
+      document.getElementById('jarvis-rec').textContent = 'Recomendación: ' + j.rec;
+    }
+
     function renderEnv() {
-      const e = AEROVOLT.env;
-      document.getElementById('e-irr').textContent = e.irradiance;
-      document.getElementById('e-mod').textContent = e.module_temp + '°';
-      document.getElementById('e-amb').textContent = e.ambient_temp + '°';
-      document.getElementById('e-wind').textContent = e.wind_speed + ' m/s';
-      document.getElementById('e-soil').textContent = (e.soiling_index * 100).toFixed(0) + '%';
+      const e = OM.env;
+      const rows = [
+        ['Irradiancia', e.irradiance + ' W/m²'],
+        ['T. módulo', e.module_temp + ' °C'],
+        ['T. ambiente', e.ambient_temp + ' °C'],
+        ['Viento', e.wind_speed + ' m/s ' + e.wind_dir],
+        ['Humedad', e.humidity + ' %'],
+        ['Lluvia', e.rain_mm + ' mm (acc ' + e.rain_acc_mm + ')'],
+        ['Soiling', (e.soiling_index * 100).toFixed(0) + ' %'],
+        ['Nubosidad', e.cloud_cover + ' %'],
+        ['Elev. solar', e.solar_elevation + '°'],
+        ['Forecast', e.forecast]
+      ];
+      document.getElementById('env-grid').innerHTML = rows.map(function (r) {
+        return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>';
+      }).join('');
+      document.getElementById('weather-impact').textContent =
+        'WEATHER IMPACT · Irradiancia normal · Temperatura alta · Viento normal · Soiling elevado';
     }
-    function showDetail(id) {
-      const inv = AEROVOLT.inverters.find(i => i.id === id);
+
+    function renderFlow() {
+      const list = invList();
+      const hasFault = list.some(function (i) { return i.status === 'FAULT'; });
+      const hasOff = list.some(function (i) { return i.status === 'OFFLINE'; });
+      const hasWarn = list.some(function (i) { return i.status === 'WARNING' || i.status === 'DEGRADED'; });
+      const states = {
+        SOL: 'ok', PANELES: hasWarn ? 'warn' : 'ok', STRINGS: hasWarn ? 'warn' : 'ok',
+        INVERSORES: hasFault ? 'fault' : hasOff ? 'off' : hasWarn ? 'deg' : 'ok',
+        TRANSFORMADOR: 'ok', SWITCHGEAR: 'ok', GRID: 'ok'
+      };
+      const labels = { ok: 'NORMAL', warn: 'WARNING', deg: 'DEGRADED', fault: 'FAULT', off: 'OFFLINE' };
+      document.getElementById('flow').innerHTML = OM.flowNodes.map(function (n, idx) {
+        const st = states[n] || 'ok';
+        return (idx ? '<span class="arrow">→</span>' : '') +
+          '<div class="node ' + st + '"><div>' + n + '</div><div class="st">' + labels[st] + '</div></div>';
+      }).join('');
+    }
+
+    function renderMatrix() {
+      const sectors = OM.matrix(plantId);
+      const keys = Object.keys(sectors).sort();
+      let maxCols = 0;
+      keys.forEach(function (k) { maxCols = Math.max(maxCols, sectors[k].length); });
+      let html = '<thead><tr><th>SECTOR</th>';
+      for (let c = 0; c < maxCols; c++) html += '<th>INV</th>';
+      html += '</tr></thead><tbody>';
+      keys.forEach(function (k) {
+        if (sector !== 'ALL' && sector !== k) return;
+        html += '<tr><td>SECTOR ' + k + '</td>';
+        sectors[k].forEach(function (inv) {
+          const sc = OM.statusColor(inv.status);
+          html += '<td title="' + inv.id + '" data-id="' + inv.id + '">' + sc.emoji + '<br><span style="font-size:.65rem">' + inv.id.replace('INV-', '') + '</span></td>';
+        });
+        for (let c = sectors[k].length; c < maxCols; c++) html += '<td></td>';
+        html += '</tr>';
+      });
+      html += '</tbody>';
+      document.getElementById('matrix').innerHTML = html;
+      document.querySelectorAll('#matrix td[data-id]').forEach(function (td) {
+        td.onclick = function () { showInv(td.getAttribute('data-id')); };
+      });
+    }
+
+    function showInv(id) {
+      const inv = OM.inverters.find(function (i) { return i.id === id; });
       if (!inv) return;
-      document.getElementById('detail').innerHTML =
-        '<div style="color:var(--gold);font-family:Orbitron,sans-serif;margin-bottom:8px">' + inv.id + '</div>' +
-        '<div class="stat-row"><span>Estado</span><span class="v">' + inv.status + '</span></div>' +
-        '<div class="stat-row"><span>Potencia</span><span class="v">' + inv.power_kw + ' kW</span></div>' +
-        '<div class="stat-row"><span>Esperada</span><span class="v">' + inv.expected_kw + ' kW</span></div>' +
-        '<div class="stat-row"><span>PR</span><span class="v">' + AEROVOLT.calcPR(inv) + '%</span></div>' +
-        '<div class="stat-row"><span>DC</span><span class="v">' + inv.dc_v + 'V / ' + inv.dc_a + 'A</span></div>' +
-        '<div class="stat-row"><span>AC</span><span class="v">' + inv.ac_v + 'V / ' + inv.ac_a + 'A</span></div>' +
-        '<div class="stat-row"><span>Comm</span><span class="v">' + inv.last_comm_s + 's</span></div>' +
-        (inv.alarm ? '<p style="color:var(--orange);margin-top:8px">⚠ ' + inv.alarm + '</p>' : '');
-      termLog('Selected ' + inv.id + ' · ' + inv.status + ' · ' + inv.power_kw + ' kW');
+      selectedInv = inv;
+      const sc = OM.statusColor(inv.status);
+      document.getElementById('eq-detail').innerHTML =
+        '<div style="color:var(--cyan);font-family:Orbitron,sans-serif;margin-bottom:8px">' + inv.id + ' · Sector ' + inv.sector + '</div>' +
+        '<div class="row"><span>Estado</span><b>' + sc.emoji + ' ' + inv.status + '</b></div>' +
+        '<div class="row"><span>DC V / A / Power</span><b>' + inv.dc_v + ' V · ' + inv.dc_a + ' A · ' + inv.power_kw + ' kW</b></div>' +
+        '<div class="row"><span>AC V / A / Power</span><b>' + inv.ac_v + ' V · ' + inv.ac_a + ' A · ' + inv.ac_power_kw + ' kW</b></div>' +
+        '<div class="row"><span>Frequency / PF</span><b>' + inv.freq + ' Hz · ' + inv.pf + '</b></div>' +
+        '<div class="row"><span>Temperature</span><b>' + (inv.temp_c != null ? inv.temp_c + ' °C' : '—') + '</b></div>' +
+        '<div class="row"><span>Efficiency / PR</span><b>' + inv.efficiency + '% · ' + inv.pr + '%</b></div>' +
+        '<div class="row"><span>Expected</span><b>' + inv.expected_kw + ' kW</b></div>' +
+        '<div class="row"><span>Communication</span><b>' + inv.comm + ' · last ' + inv.last_comm_s + 's</b></div>' +
+        '<div class="row"><span>Latency / Protocol</span><b>' + (inv.latency_ms != null ? inv.latency_ms + ' ms' : '—') + ' · ' + inv.protocol + '</b></div>' +
+        '<div class="row"><span>Gateway</span><b>' + inv.gateway + '</b></div>' +
+        (inv.alarm ? '<div class="row"><span>Alarm</span><b style="color:var(--danger)">' + inv.alarm + '</b></div>' : '');
     }
-    const termLines = [];
-    function termLog(msg) {
-      const t = new Date().toLocaleTimeString('es-MX', { hour12: false });
-      termLines.push('<div class="line"><span class="t">[' + t + ']</span> ' + msg + '</div>');
-      if (termLines.length > 12) termLines.shift();
-      document.getElementById('term').innerHTML = termLines.join('');
+
+    function renderIncidents() {
+      const rows = OM.incidents.filter(function (i) { return i.plantId === plantId; });
+      document.querySelector('#inc-table tbody').innerHTML = rows.map(function (i) {
+        return '<tr><td>' + i.id + '</td><td class="sev-' + i.severity + '">' + i.severity + '</td><td>' +
+          i.equipment + '</td><td>' + i.type + '</td><td>' + i.status + '</td><td>' + i.energyLoss_kWh + ' kWh</td></tr>';
+      }).join('');
     }
-    function initCharts() {
-      const labels = Array.from({ length: 12 }, (_, i) => (8 + i) + ':00');
-      const list = invs();
-      const base = list.reduce((s, i) => s + i.power_kw, 0) / Math.max(list.length, 1);
-      const powerData = labels.map((_, i) => +(base * (0.7 + 0.3 * Math.sin(i / 2)) + Math.random() * 4).toFixed(1));
-      const irrData = labels.map((_, i) => Math.round(200 + 700 * Math.sin((i + 1) / 4) + Math.random() * 30));
-      if (powerChart) powerChart.destroy();
-      if (irrChart) irrChart.destroy();
+
+    function renderHist() {
+      document.querySelector('#hist-table tbody').innerHTML = invList().map(function (i) {
+        return '<tr><td>' + i.id + '</td><td>' + i.comm + '</td><td>' + i.last_comm_s + 's</td><td>' +
+          (i.latency_ms != null ? i.latency_ms + ' ms' : '—') + '</td><td>' + i.protocol + '</td><td>' +
+          i.gateway + '</td><td>' + OM.statusColor(i.status).emoji + ' ' + i.status + '</td></tr>';
+      }).join('');
+    }
+
+    function renderCharts(hours) {
+      const s = OM.series(hours || 12);
       const opts = {
-        responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#a0aec0', boxWidth: 10, font: { size: 10 } } } },
         scales: {
-          x: { ticks: { color: '#8b93a8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.06)' } },
-          y: { ticks: { color: '#8b93a8', font: { size: 9 } }, grid: { color: 'rgba(212,175,55,0.06)' } }
+          x: { ticks: { color: '#718096', font: { size: 9 } }, grid: { color: 'rgba(0,212,255,0.06)' } },
+          y: { ticks: { color: '#718096', font: { size: 9 } }, grid: { color: 'rgba(0,212,255,0.06)' } }
         }
       };
+      if (powerChart) powerChart.destroy();
+      if (irrChart) irrChart.destroy();
       powerChart = new Chart(document.getElementById('c-power'), {
         type: 'line',
-        data: { labels, datasets: [{ data: powerData, borderColor: '#d4af37', backgroundColor: 'rgba(212,175,55,0.1)', fill: true, tension: 0.35, pointRadius: 0 }] },
+        data: {
+          labels: s.labels,
+          datasets: [
+            { label: 'DC POWER', data: s.dc, borderColor: '#00d4ff', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+            { label: 'AC POWER', data: s.ac, borderColor: '#00e676', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+            { label: 'EXPECTED', data: s.expected, borderColor: '#ffb300', borderDash: [4, 4], tension: 0.3, pointRadius: 0, borderWidth: 1.5 }
+          ]
+        },
         options: opts
       });
       irrChart = new Chart(document.getElementById('c-irr'), {
         type: 'line',
-        data: { labels, datasets: [
-          { data: irrData, borderColor: '#f5c542', tension: 0.35, pointRadius: 0 },
-          { data: powerData, borderColor: '#00e5ff', tension: 0.35, pointRadius: 0 }
-        ]},
-        options: opts
+        data: {
+          labels: s.labels,
+          datasets: [
+            { label: 'Irradiance', data: s.irr, borderColor: '#ffb300', yAxisID: 'y1', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Actual MW', data: s.actualMWh, borderColor: '#00e676', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Expected MW', data: s.expectedMWh, borderColor: '#00d4ff', borderDash: [4, 4], tension: 0.3, pointRadius: 0, borderWidth: 1.5 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#a0aec0', boxWidth: 10, font: { size: 10 } } } },
+          scales: {
+            x: { ticks: { color: '#718096', font: { size: 9 } }, grid: { color: 'rgba(0,212,255,0.06)' } },
+            y: { ticks: { color: '#718096', font: { size: 9 } }, grid: { color: 'rgba(0,212,255,0.06)' } },
+            y1: { position: 'right', ticks: { color: '#ffb300', font: { size: 9 } }, grid: { drawOnChartArea: false } }
+          }
+        }
       });
     }
-    function renderAll() {
-      renderPlants(); renderFlow(); renderKPIs(); renderAlarms(); renderEnv(); initCharts();
+
+    function refresh() {
+      renderKpis();
+      renderJarvis();
+      renderEnv();
+      renderFlow();
+      renderMatrix();
+      renderIncidents();
+      renderHist();
+      tickClock();
     }
-    renderAll();
-    termLog('AEROVOLT Control Center online');
-    termLog('Plant ' + selectedPlant + ' loaded · DEMO mode');
-    termLog('Monitoring only · No remote control');
-    setInterval(() => { AEROVOLT.tick(); renderFlow(); renderKPIs(); renderEnv(); }, 4000);
+
+    document.getElementById('plant-sel').onchange = function () {
+      plantId = this.value; sector = 'ALL'; fillSectorSel(); refresh(); renderCharts(12);
+    };
+    document.getElementById('sector-sel').onchange = function () {
+      sector = this.value; refresh();
+    };
+    document.querySelectorAll('#range-power button').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('#range-power button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        renderCharts(+b.getAttribute('data-h'));
+      };
+    });
+    document.querySelectorAll('#range-irr button').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('#range-irr button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        renderCharts(+b.getAttribute('data-h'));
+      };
+    });
+
+    document.getElementById('j-ack').onclick = function () {
+      document.getElementById('j-msg').textContent = 'ACK registrado · operador web · ' + new Date().toLocaleTimeString();
+    };
+    document.getElementById('j-wo').onclick = function () {
+      document.getElementById('j-msg').textContent = 'Work order WO-DEMO creado (stub mantenimiento).';
+    };
+    document.getElementById('j-tech').onclick = function () {
+      document.getElementById('j-msg').textContent = 'Técnico despachado (demo) · Sector B.';
+    };
+    document.getElementById('j-eq').onclick = function () {
+      const bad = OM.inverters.find(function (i) {
+        return i.plantId === plantId && (i.status === 'FAULT' || i.status === 'OFFLINE' || i.status === 'DEGRADED');
+      });
+      if (bad) showInv(bad.id);
+      document.getElementById('j-msg').textContent = bad ? 'Mostrando ' + bad.id : 'Sin equipo crítico';
+    };
+
+    fillPlantSel();
+    fillSectorSel();
+    refresh();
+    renderCharts(12);
+    setInterval(tickClock, 1000);
+    setInterval(function () {
+      // micro-variación demo
+      OM.inverters.forEach(function (i) {
+        if (i.status === 'NORMAL' && Math.random() > 0.7) {
+          i.power_kw = +Math.max(0, i.power_kw + (Math.random() - 0.5) * 3).toFixed(1);
+        }
+      });
+      renderKpis();
+      renderFlow();
+    }, 8000);
   </script>
 </body>
 </html>

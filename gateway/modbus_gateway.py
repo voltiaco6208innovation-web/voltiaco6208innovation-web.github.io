@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AEROVOLT Modbus Gateway — HTTP <-> Modbus (DEMO memoria / FIELD pymodbus)."""
+"""AEROVOLT Modbus Gateway — IoT industrial edge. HTTP JSON <-> Modbus TCP. Ver ARCHITECTURE.md"""
 from __future__ import annotations
 
 import json
@@ -13,10 +13,27 @@ HOST = os.getenv("AEROVOLT_GW_HOST", "127.0.0.1")
 PORT = int(os.getenv("AEROVOLT_GW_PORT", "8750"))
 TOKEN = os.getenv("AEROVOLT_GW_TOKEN", "")
 FIELD = os.getenv("AEROVOLT_MODBUS_FIELD", "0") == "1"
+SOURCE = "FIELD" if FIELD else "DEMO"
 
 SIM: dict = {}
 LOCK = threading.Lock()
 LOG: list = []
+
+ARCH = {
+    "service": "aerovolt-modbus-gateway",
+    "role": "industrial_iot_edge",
+    "cyberdeck": False,
+    "layers": ["web_om", "gateway_http", "modbus_tcp_field"],
+    "endpoints": [
+        "GET /health",
+        "GET /architecture",
+        "GET /log",
+        "POST /modbus/read",
+        "POST /modbus/telemetry",
+        "POST /modbus/emergency",
+        "POST /api/shutdown",
+    ],
+}
 
 
 def now():
@@ -47,7 +64,7 @@ def decode_reg(reg: dict, raw: int) -> float:
 
 def try_write_coil(host: str, unit_id: int, address: int, value: bool):
     if not FIELD:
-        return False, "FIELD off (AEROVOLT_MODBUS_FIELD=0)"
+        return False, "FIELD off"
     try:
         from pymodbus.client import ModbusTcpClient
     except Exception as e:
@@ -87,6 +104,38 @@ def try_read_holding(host: str, unit_id: int, address: int):
         client.close()
 
 
+def read_device_payload(device: dict) -> dict:
+    device_id = device.get("id") or "UNKNOWN"
+    host = device.get("host") or "127.0.0.1"
+    unit_id = int(device.get("unitId") or 1)
+    registers = device.get("registers") or []
+    values, raw_map = {}, {}
+    with LOCK:
+        ensure_device(device_id)
+        for reg in registers:
+            addr = int(reg.get("address") or 0)
+            key = reg.get("key") or f"reg_{addr}"
+            if FIELD:
+                regs, err = try_read_holding(host, unit_id, addr)
+                if regs is not None:
+                    raw_map[key] = regs[0]
+                    values[key] = decode_reg(reg, regs[0])
+                    continue
+                log("read_fallback_sim", device=device_id, err=err)
+            raw_val = int(SIM[device_id]["holding"].get(addr, 0))
+            raw_map[key] = raw_val
+            values[key] = decode_reg(reg, raw_val)
+        values["_coil_emergency"] = bool(SIM[device_id]["coils"].get(0, False))
+    return {
+        "ok": True,
+        "deviceId": device_id,
+        "values": values,
+        "raw": raw_map,
+        "source": SOURCE,
+        "at": now(),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def _auth_ok(self):
         if not TOKEN:
@@ -116,11 +165,15 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "service": "aerovolt-modbus-gateway",
                 "field": FIELD,
+                "source": SOURCE,
                 "at": now(),
                 "devices_sim": list(SIM.keys()),
+                "cyberdeck": False,
             })
+        if path == "/architecture":
+            return self._json(200, {**ARCH, "field": FIELD, "source": SOURCE, "at": now()})
         if path == "/log":
-            return self._json(200, {"log": LOG[:50]})
+            return self._json(200, {"log": LOG[:50], "source": SOURCE})
         return self._json(404, {"error": "not found"})
 
     def do_POST(self):
@@ -136,34 +189,18 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/api/shutdown", "/modbus/emergency"):
             return self._emergency(data)
         if path == "/modbus/read":
-            return self._read(data)
+            out = read_device_payload(data.get("device") or {})
+            log("read", device=out.get("deviceId"), source=SOURCE)
+            return self._json(200, out)
+        if path == "/modbus/telemetry":
+            devices = data.get("devices") or []
+            snap = [read_device_payload(d) for d in devices]
+            log("telemetry", count=len(snap), source=SOURCE)
+            return self._json(200, {
+                "ok": True, "source": SOURCE, "at": now(),
+                "count": len(snap), "devices": snap,
+            })
         return self._json(404, {"error": "not found"})
-
-    def _read(self, data):
-        device = data.get("device") or {}
-        device_id = device.get("id") or "UNKNOWN"
-        host = device.get("host") or "127.0.0.1"
-        unit_id = int(device.get("unitId") or 1)
-        registers = device.get("registers") or []
-        values, raw_map = {}, {}
-        with LOCK:
-            ensure_device(device_id)
-            for reg in registers:
-                addr = int(reg.get("address") or 0)
-                key = reg.get("key") or f"reg_{addr}"
-                if FIELD:
-                    regs, err = try_read_holding(host, unit_id, addr)
-                    if regs is not None:
-                        raw_map[key] = regs[0]
-                        values[key] = decode_reg(reg, regs[0])
-                        continue
-                    log("read_fallback_sim", device=device_id, err=err)
-                raw_val = int(SIM[device_id]["holding"].get(addr, 0))
-                raw_map[key] = raw_val
-                values[key] = decode_reg(reg, raw_val)
-            values["_coil_emergency"] = bool(SIM[device_id]["coils"].get(0, False))
-        log("read", device=device_id, field=FIELD)
-        return self._json(200, {"ok": True, "deviceId": device_id, "values": values, "raw": raw_map})
 
     def _emergency(self, data):
         equipment_id = data.get("equipmentId") or "ALL"
@@ -199,17 +236,15 @@ class Handler(BaseHTTPRequestHandler):
                     SIM[did]["holding"][110] = 3
                     SIM[did]["holding"][100] = 0
                 results.append({
-                    "deviceId": did,
-                    "coil": address,
-                    "value": bool(value),
-                    "physical": phys_ok,
-                    "detail": phys_msg,
+                    "deviceId": did, "coil": address, "value": bool(value),
+                    "physical": phys_ok, "detail": phys_msg,
                 })
         log("emergency", equipmentId=equipment_id, value=value, results=results)
         ok = True if not FIELD else any(r["physical"] for r in results)
         return self._json(200 if ok or not FIELD else 502, {
             "ok": True if not FIELD else ok,
             "mode": "FIELD" if FIELD else "DEMO",
+            "source": SOURCE,
             "at": now(),
             "results": results,
         })
@@ -219,9 +254,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    log("gateway_start", host=HOST, port=PORT, field=FIELD)
+    log("gateway_start", host=HOST, port=PORT, field=FIELD, source=SOURCE)
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"AEROVOLT Modbus Gateway http://{HOST}:{PORT} FIELD={FIELD}")
+    print(f"AEROVOLT Modbus Gateway http://{HOST}:{PORT} source={SOURCE} FIELD={FIELD}")
     httpd.serve_forever()
 
 

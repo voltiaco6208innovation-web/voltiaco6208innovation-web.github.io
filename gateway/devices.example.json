@@ -1,0 +1,27 @@
+{
+  "_comment": "Ejemplo de inventario edge. Alinear con js/modbus-map.js antes de FIELD.",
+  "plantId": "PLT-001",
+  "modbusPort": 502,
+  "pollIntervalMs": 4000,
+  "emergency": { "type": "coil", "address": 0 },
+  "devices": [
+    {
+      "id": "INV-01",
+      "host": "192.168.10.11",
+      "unitId": 1,
+      "registers": [
+        { "key": "power_kw", "type": "holding", "address": 100, "scale": 0.1, "unit": "kW" },
+        { "key": "status_code", "type": "holding", "address": 110, "scale": 1, "unit": "code" }
+      ]
+    },
+    {
+      "id": "INV-07",
+      "host": "192.168.10.17",
+      "unitId": 7,
+      "registers": [
+        { "key": "power_kw", "type": "holding", "address": 100, "scale": 0.1, "unit": "kW" },
+        { "key": "status_code", "type": "holding", "address": 110, "scale": 1, "unit": "code" }
+      ]
+    }
+  ]
+}

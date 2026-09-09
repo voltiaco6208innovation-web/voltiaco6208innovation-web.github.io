@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT O&M · Maintenance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="js/om-shell.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1></div></div>
+      <nav id="om-nav"></nav>
+    </aside>
+    <div class="main">
+      <div class="top">
+        <div class="title">Maintenance / Work Orders</div>
+        <span class="badge-demo">DATA SOURCE: DEMO</span>
+        <button type="button" class="primary" id="new-wo">New work order</button>
+      </div>
+      <div class="panel">
+        <h2>Work orders</h2>
+        <div style="overflow:auto">
+          <table class="data" id="tbl">
+            <thead><tr><th>ID</th><th>Type</th><th>Eq</th><th>Status</th><th>Tech</th><th>Priority</th><th>Cost</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="note">Types: PREVENTIVE · CORRECTIVE · PREDICTIVE · INSPECTION · CLEANING · THERMOGRAPHY · IV CURVE · CALIBRATION · REPLACEMENT</p>
+      </div>
+    </div>
+  </div>
+  <script src="js/om-data.js"></script>
+  <script src="js/om-context.js"></script>
+  <script src="js/om-nav.js"></script>
+  <script>
+    const OM = AEROVOLT_OM;
+    function render() {
+      document.querySelector('#tbl tbody').innerHTML = OM.workOrders.map(function (w) {
+        return '<tr><td>' + w.id + '</td><td>' + w.type + '</td><td>' + w.equipment + '</td><td>' +
+          w.status + '</td><td>' + (w.technician || '—') + '</td><td>' + w.priority + '</td><td>$' + w.cost + '</td></tr>';
+      }).join('');
+    }
+    document.getElementById('new-wo').onclick = function () {
+      const ctx = AEROVOLT_CTX.get();
+      OM.createWorkOrder({
+        plantId: ctx.plantId,
+        sector: ctx.sector === 'ALL' ? 'A' : ctx.sector,
+        equipment: ctx.equipmentId || 'INV-01',
+        type: 'INSPECTION',
+        priority: 'MEDIUM',
+        notes: 'Manual WO from maintenance module'
+      });
+      render();
+    };
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT O&M · Environment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="js/om-shell.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1></div></div>
+      <nav id="om-nav"></nav>
+    </aside>
+    <div class="main">
+      <div class="top">
+        <div class="title">Environment</div>
+        <span class="badge-demo">DATA SOURCE: DEMO</span>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <h2>Environmental impact</h2>
+        <div class="kpis" id="impact"></div>
+        <p class="note">Estación meteo DEMO · preparado para Weather API / sensores reales.</p>
+      </div>
+    </div>
+  </div>
+  <script src="js/om-data.js"></script>
+  <script src="js/om-context.js"></script>
+  <script src="js/om-nav.js"></script>
+  <script>
+    const e = AEROVOLT_OM.env;
+    const rows = [
+      ['Irradiance', e.irradiance + ' W/m²'],
+      ['Module temp', e.module_temp + ' °C'],
+      ['Ambient temp', e.ambient_temp + ' °C'],
+      ['Wind', e.wind_speed + ' m/s ' + e.wind_dir],
+      ['Humidity', e.humidity + ' %'],
+      ['Rain', e.rain_mm + ' mm'],
+      ['Rain acc', e.rain_acc_mm + ' mm'],
+      ['Soiling', (e.soiling_index * 100).toFixed(0) + ' %'],
+      ['Cloud cover', e.cloud_cover + ' %'],
+      ['Solar elevation', e.solar_elevation + '°'],
+      ['Forecast', e.forecast]
+    ];
+    document.getElementById('kpis').innerHTML = rows.map(function (r) {
+      return '<div class="kpi"><div class="l">' + r[0] + '</div><div class="v" style="font-size:.9rem">' + r[1] + '</div></div>';
+    }).join('');
+    function status(label, ok) {
+      return '<div class="kpi"><div class="l">' + label + '</div><div class="v" style="color:' + (ok ? 'var(--success)' : 'var(--warning)') + '">' + (ok ? 'NORMAL' : 'ATTENTION') + '</div></div>';
+    }
+    document.getElementById('impact').innerHTML =
+      status('Irradiance', e.irradiance > 500) +
+      status('Temperature', e.module_temp < 55) +
+      status('Wind', e.wind_speed < 12) +
+      status('Soiling', e.soiling_index < 0.15);
+  </script>
+</body>
+</html>

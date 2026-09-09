@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT O&M · Incidents</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="js/om-shell.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1></div></div>
+      <nav id="om-nav"></nav>
+    </aside>
+    <div class="main">
+      <div class="top">
+        <div class="title">Alarm / Incident Center</div>
+        <span class="badge-demo">DATA SOURCE: DEMO</span>
+      </div>
+      <div class="kpis" id="metrics"></div>
+      <div class="panel">
+        <h2>Workflow · DETECT → … → CLOSE</h2>
+        <p class="note">NEW · ACKNOWLEDGED · INVESTIGATING · IN PROGRESS · RESOLVED · CLOSED</p>
+        <div style="overflow:auto">
+          <table class="data" id="tbl">
+            <thead>
+              <tr><th>ID</th><th>Sev</th><th>Eq</th><th>Type</th><th>Status</th><th>Loss</th><th>Actions</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="detail" class="panel" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+  <script src="js/om-data.js"></script>
+  <script src="js/om-context.js"></script>
+  <script src="js/om-nav.js"></script>
+  <script>
+    const OM = AEROVOLT_OM;
+    const plantId = AEROVOLT_CTX.get().plantId;
+    function render() {
+      const m = OM.mttaMttr(plantId);
+      document.getElementById('metrics').innerHTML =
+        [['MTTA', m.mtta_min + ' min'], ['MTTR', m.mttr_h + ' h'], ['Downtime', m.downtime_h + ' h'], ['Energy loss', m.energyLoss_kWh + ' kWh']].map(function (x) {
+          return '<div class="kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>';
+        }).join('');
+      const rows = OM.incidents.filter(function (i) { return i.plantId === plantId; });
+      document.querySelector('#tbl tbody').innerHTML = rows.map(function (i) {
+        return '<tr data-id="' + i.id + '"><td>' + i.id + '</td><td class="sev-' + i.severity + '">' + i.severity +
+          '</td><td>' + i.equipment + '</td><td>' + i.type + '</td><td>' + i.status + '</td><td>' +
+          i.energyLoss_kWh + '</td><td><button type="button" data-act="ack" data-id="' + i.id + '">ACK</button> ' +
+          '<button type="button" data-act="inv" data-id="' + i.id + '">Investigate</button> ' +
+          '<button type="button" data-act="close" data-id="' + i.id + '">Close</button></td></tr>';
+      }).join('');
+      document.querySelectorAll('#tbl tbody tr').forEach(function (tr) {
+        tr.onclick = function (e) {
+          if (e.target.tagName === 'BUTTON') return;
+          const i = OM.incidents.find(function (x) { return x.id === tr.getAttribute('data-id'); });
+          if (!i) return;
+          AEROVOLT_CTX.set({ equipmentId: i.equipment, sector: i.sector });
+          document.getElementById('detail').innerHTML =
+            '<h2>' + i.id + '</h2><p class="note">' + i.description + '</p>' +
+            '<p class="note">Cause: ' + (i.possibleCause || '—') + '</p>' +
+            '<p class="note">Action: ' + (i.recommendedAction || '—') + '</p>' +
+            '<p class="note">Assigned: ' + (i.assignedTo || '—') + ' · ACK: ' + (i.acknowledgedAt || '—') + '</p>' +
+            '<button type="button" class="primary" onclick="location.href=\'control-center.html\'">View equipment</button> ' +
+            '<button type="button" onclick="createWO(\'' + i.equipment + '\',\'' + i.sector + '\')">Create work order</button>';
+        };
+      });
+      document.querySelectorAll('button[data-act]').forEach(function (b) {
+        b.onclick = function (e) {
+          e.stopPropagation();
+          const id = b.getAttribute('data-id');
+          const act = b.getAttribute('data-act');
+          if (act === 'ack') OM.advanceIncident(id, 'ACKNOWLEDGED', 'web.operator');
+          if (act === 'inv') OM.advanceIncident(id, 'INVESTIGATING', 'web.operator');
+          if (act === 'close') OM.advanceIncident(id, 'CLOSED', 'web.operator');
+          render();
+        };
+      });
+    }
+    window.createWO = function (eq, sec) {
+      const wo = OM.createWorkOrder({ equipment: eq, sector: sec, plantId: plantId, type: 'CORRECTIVE', priority: 'HIGH', notes: 'From incident center' });
+      alert('Work order ' + wo.id + ' creado (DEMO)');
+      location.href = 'maintenance.html';
+    };
+    render();
+  </script>
+</body>
+</html>

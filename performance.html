@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT O&M · Performance</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="js/om-shell.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1></div></div>
+      <nav id="om-nav"></nav>
+    </aside>
+    <div class="main">
+      <div class="top">
+        <div class="title">Performance</div>
+        <span class="badge-demo">DATA SOURCE: DEMO</span>
+        <select id="plant"></select>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <h2>Real vs Expected</h2>
+        <div class="kpis" id="cmp"></div>
+        <p class="note" id="diag"></p>
+      </div>
+      <div class="panel">
+        <h2>Power · DC / AC / Expected</h2>
+        <div class="ranges" id="r1">
+          <button type="button" data-h="6">6H</button>
+          <button type="button" data-h="12" class="on">12H</button>
+          <button type="button" data-h="24">24H</button>
+          <button type="button" data-h="48">7D*</button>
+        </div>
+        <div class="chart-box"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Irradiance vs Production</h2>
+        <div class="chart-box"><canvas id="c2"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Performance heatmap · sectors × inverters</h2>
+        <div style="overflow:auto" id="heat"></div>
+        <p class="note">Clic en celda → Equipment Detail (Control Center con contexto).</p>
+      </div>
+    </div>
+  </div>
+  <script src="js/om-data.js"></script>
+  <script src="js/om-context.js"></script>
+  <script src="js/om-nav.js"></script>
+  <script>
+    const OM = AEROVOLT_OM;
+    let plantId = AEROVOLT_CTX.get().plantId;
+    let ch1, ch2;
+    document.getElementById('plant').innerHTML = OM.plants.map(function (p) {
+      return '<option value="' + p.id + '">' + p.id + ' · ' + p.name + '</option>';
+    }).join('');
+    document.getElementById('plant').value = plantId;
+    document.getElementById('plant').onchange = function () {
+      plantId = this.value; AEROVOLT_CTX.setPlant(plantId); render(12);
+    };
+    function render(h) {
+      const k = OM.plantKpis(plantId);
+      document.getElementById('kpis').innerHTML =
+        [['Output', k.outputMW, 'MW'], ['Today', k.todayEnergyMWh, 'MWh'], ['PR', k.pr, '%'], ['Avail', k.availability, '%'], ['Yield', k.specificYield, 'kWh/kWp']].map(function (x) {
+          return '<div class="kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div><div class="note">' + x[2] + '</div></div>';
+        }).join('');
+      document.getElementById('cmp').innerHTML =
+        [['Expected', k.expectedMWh + ' MWh'], ['Actual', k.todayEnergyMWh + ' MWh'], ['Deviation', '-' + k.deviationPct + '%'], ['Loss', k.lossMWh + ' MWh']].map(function (x) {
+          return '<div class="kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>';
+        }).join('');
+      document.getElementById('diag').textContent =
+        k.deviationPct > 3
+          ? 'Diagnóstico DEMO: irradiancia suficiente con producción ' + k.deviationPct + '% bajo esperado. Revisar Sector B / INV-07.'
+          : 'Desviación dentro de banda normal (DEMO).';
+      const s = OM.series(plantId, h);
+      if (ch1) ch1.destroy(); if (ch2) ch2.destroy();
+      const opt = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a0aec0', boxWidth: 10 } } }, scales: { x: { ticks: { color: '#718096' }, grid: { color: 'rgba(0,212,255,.06)' } }, y: { ticks: { color: '#718096' }, grid: { color: 'rgba(0,212,255,.06)' } } } };
+      ch1 = new Chart(document.getElementById('c1'), { type: 'line', data: { labels: s.labels, datasets: [
+        { label: 'DC', data: s.dc, borderColor: '#00d4ff', tension: .3, pointRadius: 0 },
+        { label: 'AC', data: s.ac, borderColor: '#00e676', tension: .3, pointRadius: 0 },
+        { label: 'Expected', data: s.expected, borderColor: '#ffb300', borderDash: [4,4], tension: .3, pointRadius: 0 }
+      ]}, options: opt });
+      ch2 = new Chart(document.getElementById('c2'), { type: 'line', data: { labels: s.labels, datasets: [
+        { label: 'Irradiance', data: s.irr, borderColor: '#ffb300', yAxisID: 'y1', tension: .3, pointRadius: 0 },
+        { label: 'Actual MW', data: s.actualMWh, borderColor: '#00e676', tension: .3, pointRadius: 0 },
+        { label: 'Expected MW', data: s.expectedMWh, borderColor: '#00d4ff', borderDash: [4,4], tension: .3, pointRadius: 0 }
+      ]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#a0aec0', boxWidth: 10 } } }, scales: { x: { ticks: { color: '#718096' }, grid: { color: 'rgba(0,212,255,.06)' } }, y: { ticks: { color: '#718096' }, grid: { color: 'rgba(0,212,255,.06)' } }, y1: { position: 'right', ticks: { color: '#ffb300' }, grid: { drawOnChartArea: false } } } } });
+      const m = OM.matrix(plantId);
+      let html = '<table class="data"><thead><tr><th>Sector</th>';
+      const max = Math.max.apply(null, Object.keys(m).map(function (k) { return m[k].length; }));
+      for (let i = 0; i < max; i++) html += '<th>INV</th>';
+      html += '</tr></thead><tbody>';
+      Object.keys(m).sort().forEach(function (sec) {
+        html += '<tr><td>SECTOR ' + sec + '</td>';
+        m[sec].forEach(function (inv) {
+          const sc = OM.statusColor(inv.status);
+          html += '<td style="cursor:pointer" data-id="' + inv.id + '">' + sc.emoji + ' ' + inv.pr + '%</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('heat').innerHTML = html;
+      document.querySelectorAll('#heat td[data-id]').forEach(function (td) {
+        td.onclick = function () {
+          AEROVOLT_CTX.setEquipment(td.getAttribute('data-id'));
+          location.href = 'control-center.html';
+        };
+      });
+    }
+    document.querySelectorAll('#r1 button').forEach(function (b) {
+      b.onclick = function () {
+        document.querySelectorAll('#r1 button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        render(+b.getAttribute('data-h'));
+      };
+    });
+    render(12);
+  </script>
+</body>
+</html>

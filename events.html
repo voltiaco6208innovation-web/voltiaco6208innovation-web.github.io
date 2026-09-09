@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT O&M · Event History</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="js/om-shell.css" />
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1></div></div>
+      <nav id="om-nav"></nav>
+    </aside>
+    <div class="main">
+      <div class="top">
+        <div class="title">Event History</div>
+        <span class="badge-demo">DATA SOURCE: DEMO</span>
+        <select id="cat">
+          <option value="ALL">ALL</option>
+          <option>ALARMS</option>
+          <option>MAINTENANCE</option>
+          <option>COMMUNICATION</option>
+          <option>PERFORMANCE</option>
+          <option>SYSTEM</option>
+        </select>
+      </div>
+      <div class="panel">
+        <div style="overflow:auto">
+          <table class="data" id="tbl">
+            <thead>
+              <tr><th>Timestamp</th><th>Plant</th><th>Sector</th><th>Equipment</th><th>Event</th><th>Sev</th><th>Status</th><th>User</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="js/om-data.js"></script>
+  <script src="js/om-context.js"></script>
+  <script src="js/om-nav.js"></script>
+  <script>
+    function render() {
+      const cat = document.getElementById('cat').value;
+      const rows = AEROVOLT_OM.events.filter(function (e) {
+        return cat === 'ALL' || e.category === cat;
+      });
+      document.querySelector('#tbl tbody').innerHTML = rows.map(function (e) {
+        return '<tr><td>' + e.ts + '</td><td>' + e.plantId + '</td><td>' + e.sector + '</td><td>' +
+          e.equipment + '</td><td>' + e.event + '</td><td class="sev-' + e.severity + '">' + e.severity +
+          '</td><td>' + e.status + '</td><td>' + e.user + '</td></tr>';
+      }).join('');
+    }
+    document.getElementById('cat').onchange = render;
+    render();
+  </script>
+</body>
+</html>

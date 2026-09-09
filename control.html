@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Centro de control personal</title>
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: Inter, system-ui, sans-serif; }
+    .shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; position: relative; z-index: 1; }
+    @media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .side { position: sticky; top: 0; z-index: 5; } }
+    .side {
+      background: rgba(12, 20, 36, 0.95); border-right: 1px solid var(--line);
+      padding: 16px 12px; backdrop-filter: blur(10px);
+    }
+    .side .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .side .logo .mark { width: 32px; height: 32px; font-size: 0.85rem; }
+    .side h1 { font-family: Orbitron, sans-serif; font-size: 0.85rem; letter-spacing: 0.08em; }
+    .side nav a {
+      display: block; padding: 9px 12px; margin: 3px 0; border-radius: 8px;
+      color: var(--muted); font-size: 0.85rem; text-decoration: none; border: 1px solid transparent;
+    }
+    .side nav a:hover, .side nav a.active {
+      color: var(--text); border-color: var(--line); background: rgba(94, 176, 255, 0.1);
+    }
+    .main { padding: 20px 18px 60px; max-width: 1100px; }
+    .hero-exec {
+      border: 1px solid var(--line); border-radius: 16px; padding: 22px;
+      background:
+        radial-gradient(ellipse at 70% 20%, rgba(255, 240, 200, 0.18), transparent 45%),
+        radial-gradient(ellipse at 20% 80%, rgba(80, 180, 255, 0.2), transparent 40%),
+        linear-gradient(160deg, rgba(40, 90, 140, 0.35), rgba(12, 22, 40, 0.9));
+      margin-bottom: 20px;
+    }
+    .hero-exec h2 { font-family: Orbitron, sans-serif; font-size: 1.25rem; margin-bottom: 8px; }
+    .hero-exec p { color: var(--muted); max-width: 52rem; line-height: 1.5; }
+    .section {
+      display: none; border: 1px solid var(--line); border-radius: 14px;
+      background: var(--panel); padding: 18px; margin-bottom: 14px;
+    }
+    .section.active { display: block; }
+    .section h3 {
+      font-family: Orbitron, sans-serif; font-size: 0.95rem; color: var(--accent-2);
+      margin-bottom: 12px; letter-spacing: 0.04em;
+    }
+    .cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;
+    }
+    .card {
+      border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: rgba(8, 14, 26, 0.45);
+    }
+    .card h4 { margin: 0 0 6px; font-size: 0.92rem; }
+    .card p { margin: 0 0 10px; font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+    .card a, .card button {
+      font-size: 0.78rem; color: var(--accent-2); border: 1px solid var(--line);
+      background: transparent; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+      text-decoration: none; display: inline-block; margin: 2px 4px 2px 0;
+    }
+    .prio {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+    }
+    .prio span {
+      font-size: 0.75rem; padding: 4px 10px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--muted);
+    }
+    .prio .hi { border-color: var(--danger); color: #ff8da0; }
+    .prio .mid { border-color: var(--warn); color: var(--warn); }
+    .prio .low { border-color: var(--mint); color: var(--mint); }
+    .banner {
+      font-size: 0.82rem; color: var(--accent-2); background: rgba(94, 176, 255, 0.08);
+      border: 1px solid var(--line); padding: 10px 12px; border-radius: 10px; margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <div class="shell">
+    <aside class="side">
+      <div class="logo">
+        <span class="mark">A</span>
+        <div>
+          <h1>CONTROL</h1>
+          <small style="color:var(--accent);font-size:0.65rem;letter-spacing:0.12em">PERSONAL · EXEC</small>
+        </div>
+      </div>
+      <nav id="nav">
+        <a href="#exec" class="active" data-sec="exec">Campo ejecutivo</a>
+        <a href="#ops" data-sec="ops">Operación planta</a>
+        <a href="#inspeccion" data-sec="inspeccion">Inspección tiempo real</a>
+        <a href="#orugas" data-sec="orugas">Orugas / robots</a>
+        <a href="#modbus" data-sec="modbus">Modbus / emergencia</a>
+        <a href="#comercial" data-sec="comercial">Comercial / HMO</a>
+        <a href="#usuarios" data-sec="usuarios">Usuarios / servicios</a>
+        <a href="#config" data-sec="config">Centro de configuración</a>
+      </nav>
+      <p style="margin-top:18px;font-size:0.72rem;color:var(--muted);line-height:1.4">
+        Un solo diseño Aerovolt · acentos cian · dorado solo en logotipo
+      </p>
+      <a href="index.html" style="display:inline-block;margin-top:10px;font-size:0.78rem;color:var(--accent-2)">← Sitio público</a>
+    </aside>
+
+    <div class="main">
+      <div class="banner">Centro de control personal: todas las funciones por sección. Prioriza limpieza e inspección solo donde hace falta → menos agua y menos flotillas innecesarias.</div>
+
+      <section class="section active" id="sec-exec">
+        <div class="hero-exec">
+          <h2>Entorno ejecutivo · campo fotovoltaico</h2>
+          <p>
+            Vista de mando con luz de día y telemetría viva. Aerovolt no es otra gráfica plana:
+            une 3D, sinóptico, visión, térmica y prioridad de limpieza en un solo ambiente operativo
+            pensado para cada planta solar y escalable a mercado global.
+          </p>
+          <div class="cta-row" style="justify-content:flex-start;margin-top:14px">
+            <a class="btn primary" href="industrial-3d.html">Abrir campo 3D</a>
+            <a class="btn" href="control-center.html">Control Center</a>
+            <a class="btn" href="analytics.html">Analytics</a>
+          </div>
+        </div>
+        <h3>Accesos rápidos</h3>
+        <div class="cards">
+          <div class="card"><h4>Sinóptico</h4><p>Inversores, alarmas, KPIs.</p><a href="control-center.html">Abrir</a></div>
+          <div class="card"><h4>Monitor O&amp;M</h4><p>Rendimiento y estados.</p><a href="monitor.html">Abrir</a></div>
+          <div class="card"><h4>Planta 3D</h4><p>Campo visual ejecutivo.</p><a href="industrial-3d.html">Abrir</a></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-ops">
+        <h3>Operación de planta</h3>
+        <div class="cards">
+          <div class="card"><h4>Control Center</h4><p>Alarmas y terminal.</p><a href="control-center.html">Abrir</a></div>
+          <div class="card"><h4>Monitor</h4><p>IEC-oriented demo.</p><a href="monitor.html">Abrir</a></div>
+          <div class="card"><h4>Admin</h4><p>Plantas y equipos.</p><a href="admin.html">Abrir</a></div>
+          <div class="card"><h4>Command</h4><p>Operador HMO-COMMAND.</p><a href="command.html">Abrir</a></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-inspeccion">
+        <h3>Inspección en tiempo real</h3>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px">
+          Visión 17h + térmica + prioridad de soiling. El sistema indica qué strings o sectores
+          necesitan atención antes de mandar personal o agua.
+        </p>
+        <div class="prio">
+          <span class="hi">Prioridad alta · suciedad detectada</span>
+          <span class="mid">Media · revisar térmica</span>
+          <span class="low">Baja · limpio / diferir lavado</span>
+        </div>
+        <div class="cards" style="margin-top:14px">
+          <div class="card"><h4>Visión 17h</h4><p>Scheduler e inspecciones.</p><a href="vision.html">Abrir</a></div>
+          <div class="card"><h4>Térmica</h4><p>Stream + hotspots.</p><a href="thermal.html">Abrir</a></div>
+          <div class="card"><h4>Ejecutar ahora</h4><p>Disparo manual de inspección.</p>
+            <button type="button" id="run-insp">Run inspection</button></div>
+        </div>
+        <pre id="insp-out" style="margin-top:12px;font-size:0.75rem;color:var(--muted);white-space:pre-wrap"></pre>
+      </section>
+
+      <section class="section" id="sec-orugas">
+        <h3>Equipo de orugas / robots de limpieza</h3>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px">
+          <strong>Estado:</strong> módulo de flota en diseño (stub). Objetivo: despachar orugas solo a zonas
+          prioritarias según visión/térmica → maximizar generación y evitar lavados masivos con agua.
+        </p>
+        <div class="cards">
+          <div class="card">
+            <h4>Qué falta para llevarlo a cabo</h4>
+            <p>1) API de flota (posición, batería, misión).<br>
+               2) Mapa de filas/strings navegable.<br>
+               3) Cola de misiones desde prioridades de inspección.<br>
+               4) Hardware/SDK del robot oruga o simulador.<br>
+               5) Reglas de seguridad (no operar en tormenta / personal en campo).</p>
+          </div>
+          <div class="card">
+            <h4>Demo cola de misiones</h4>
+            <p id="missions">Sin misiones. Genera una desde inspección prioritaria.</p>
+            <button type="button" id="mk-mission">Crear misión demo</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-modbus">
+        <h3>Modbus · emergencia · edge</h3>
+        <div class="cards">
+          <div class="card"><h4>Modbus</h4><p>Mapa, poll, coil trip.</p><a href="modbus.html">Abrir</a></div>
+          <div class="card"><h4>Emergencia</h4><p>Apagado DEMO/FIELD.</p><a href="emergency.html">Abrir</a></div>
+          <div class="card"><h4>Gateway</h4><p>Python en /gateway</p><a href="https://github.com/voltiaco6208innovation-web/voltiaco6208innovation-web.github.io/tree/main/gateway" target="_blank" rel="noopener">Repo</a></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-comercial">
+        <h3>Comercial · HMO · agentes</h3>
+        <div class="cards">
+          <div class="card"><h4>Landing</h4><p>Paquetes y CTAs.</p><a href="index.html">Abrir</a></div>
+          <div class="card"><h4>Agentes</h4><p>Módulo HMO.</p><a href="agentes.html">Abrir</a></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-usuarios">
+        <h3>Usuarios · servicios · roles</h3>
+        <div class="cards">
+          <div class="card"><h4>Admin</h4><p>Usuarios y plantas (demo).</p><a href="admin.html">Abrir</a></div>
+          <div class="card"><h4>Command acceso</h4><p>Código HMO-COMMAND.</p><a href="command.html">Abrir</a></div>
+          <div class="card"><h4>Servicios catálogo</h4><p>IA, O&amp;M, visión, térmica, Modbus.</p>
+            <p style="font-size:0.8rem;color:var(--mint)">Disponible en plataforma web</p></div>
+        </div>
+      </section>
+
+      <section class="section" id="sec-config">
+        <h3>Centro de configuración por servicio</h3>
+        <div class="cards">
+          <div class="card"><h4>Edge / modo</h4><p>DEMO · FIELD</p><a href="emergency.html">Emergencia</a></div>
+          <div class="card"><h4>Visión</h4><p>Intervalo 17h, umbral</p><a href="vision.html">Configurar</a></div>
+          <div class="card"><h4>Térmica</h4><p>URL stream HLS</p><a href="thermal.html">Configurar</a></div>
+          <div class="card"><h4>Modbus</h4><p>Gateway, poll, mapa</p><a href="modbus.html">Configurar</a></div>
+          <div class="card"><h4>Orugas</h4><p>Pendiente API flota</p><span style="font-size:0.78rem;color:var(--warn)">En roadmap</span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="js/edge-core.js"></script>
+  <script>
+    const nav = document.getElementById('nav');
+    const sections = {
+      exec: 'sec-exec', ops: 'sec-ops', inspeccion: 'sec-inspeccion', orugas: 'sec-orugas',
+      modbus: 'sec-modbus', comercial: 'sec-comercial', usuarios: 'sec-usuarios', config: 'sec-config'
+    };
+    function show(id) {
+      Object.keys(sections).forEach(function (k) {
+        document.getElementById(sections[k]).classList.toggle('active', k === id);
+      });
+      nav.querySelectorAll('a').forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('data-sec') === id);
+      });
+    }
+    nav.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        show(a.getAttribute('data-sec'));
+      });
+    });
+    document.getElementById('run-insp').onclick = function () {
+      if (!window.AEROVOLT_EDGE) return;
+      const row = AEROVOLT_EDGE.vision.runNow();
+      document.getElementById('insp-out').textContent = JSON.stringify(row, null, 2);
+      if (row.labels && row.labels.indexOf('limpio') === -1) {
+        localStorage.setItem('aerovolt_last_priority', JSON.stringify({
+          at: row.at, labels: row.labels, score: row.score, sector: row.sector
+        }));
+      }
+    };
+    document.getElementById('mk-mission').onclick = function () {
+      const p = localStorage.getItem('aerovolt_last_priority');
+      const base = p ? JSON.parse(p) : { sector: 'Sector A', labels: ['suciedad'], score: 0.62 };
+      const mission = {
+        id: 'MIS_' + Date.now().toString(36),
+        type: 'CLEAN_TRACK',
+        status: 'QUEUED_DEMO',
+        target: base.sector,
+        reason: (base.labels || []).join(', '),
+        score: base.score,
+        note: 'Stub oruga: sin hardware. Listo para API de flota.'
+      };
+      const list = JSON.parse(localStorage.getItem('aerovolt_missions') || '[]');
+      list.unshift(mission);
+      localStorage.setItem('aerovolt_missions', JSON.stringify(list.slice(0, 20)));
+      document.getElementById('missions').textContent = JSON.stringify(mission, null, 2);
+    };
+  </script>
+</body>
+</html>

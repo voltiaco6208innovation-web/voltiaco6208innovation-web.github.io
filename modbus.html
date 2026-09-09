@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · Modbus</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050608; --panel: rgba(10,14,22,0.94); --border: rgba(0,229,255,0.25);
+      --cyan: #00e5ff; --gold: #d4af37; --text: #e8ecf4; --muted: #8b93a8; --green: #00ff9d; --red: #ff3b5c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--gold); text-decoration: none; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      padding: 12px 18px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.55);
+    }
+    .brand { font-family: Orbitron, sans-serif; color: var(--cyan); }
+    .nav a { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); padding: 5px 10px; border-radius: 999px; margin-left: 6px; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 18px 14px 50px; }
+    .banner {
+      background: rgba(0,229,255,0.08); border: 1px solid var(--border); color: var(--cyan);
+      padding: 10px 12px; border-radius: 10px; font-size: 0.85rem; margin-bottom: 14px;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 12px;
+    }
+    h1, h2 { font-family: Orbitron, sans-serif; font-size: 0.95rem; color: var(--gold); margin-bottom: 10px; }
+    label { display: block; font-size: 0.7rem; color: var(--muted); margin: 8px 0 4px; text-transform: uppercase; }
+    input, select {
+      width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--border);
+      background: rgba(0,0,0,0.35); color: var(--text); font: inherit;
+    }
+    button {
+      font: inherit; font-weight: 700; padding: 9px 12px; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--cyan); color: #001018; margin: 8px 6px 0 0;
+    }
+    button.ghost { background: transparent; color: var(--text); }
+    button.danger { background: var(--red); color: #fff; border-color: var(--red); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; font-family: 'Share Tech Mono', monospace; }
+    th { text-align: left; color: var(--muted); font-size: 0.68rem; text-transform: uppercase; padding: 6px 4px; border-bottom: 1px solid var(--border); }
+    td { padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .ok { color: var(--green); }
+    .bad { color: var(--red); }
+    .mono { font-family: 'Share Tech Mono', monospace; font-size: 0.8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AEROVOLT · MODBUS</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="emergency.html">Emergencia</a>
+      <a href="control-center.html">Control Center</a>
+      <a href="vision.html">Visión</a>
+      <a href="thermal.html">Térmica</a>
+    </nav>
+  </header>
+  <div class="wrap">
+    <div class="banner">
+      Mapa de registros, simulación DEMO, polling y puente HTTP al gateway Python.
+      El navegador no abre puerto 502; en FIELD el gateway escribe coils reales.
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h1>Configuración</h1>
+        <p class="mono">Modo edge: <strong id="mode">—</strong>
+          <button type="button" class="ghost" id="tog">DEMO/FIELD</button>
+        </p>
+        <label>URL gateway</label>
+        <input id="gw" placeholder="http://127.0.0.1:8750" />
+        <label>Token opcional</label>
+        <input id="token" placeholder="Bearer token" />
+        <label>Poll interval (ms)</label>
+        <input id="poll" type="number" value="4000" />
+        <button type="button" id="save">Guardar</button>
+        <button type="button" class="ghost" id="read">Leer todos</button>
+        <button type="button" class="ghost" id="start">Start poll</button>
+        <button type="button" class="ghost" id="stop">Stop poll</button>
+        <p id="msg" class="mono" style="margin-top:10px"></p>
+      </div>
+      <div class="panel">
+        <h1>Emergencia coil</h1>
+        <label>Equipo</label>
+        <select id="eq">
+          <option value="ALL">ALL</option>
+          <option value="INV-01">INV-01</option>
+          <option value="INV-02">INV-02</option>
+          <option value="INV-04">INV-04</option>
+        </select>
+        <button type="button" class="danger" id="trip">WRITE COIL TRIP = 1</button>
+        <button type="button" class="ghost" id="reset">Reset coil = 0</button>
+        <p class="mono" style="margin-top:10px">Coil address: <span id="coil-addr">0</span></p>
+        <p id="trip-msg" class="mono"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Mapa de dispositivos</h2>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>ID</th><th>Host</th><th>Unit</th><th>Regs</th><th>Última lectura</th></tr></thead>
+          <tbody id="devs"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Valores</h2>
+      <pre id="vals" class="mono" style="white-space:pre-wrap;max-height:320px;overflow:auto">—</pre>
+    </div>
+  </div>
+  <script src="js/mock-data.js"></script>
+  <script src="js/edge-core.js"></script>
+  <script src="js/modbus-map.js"></script>
+  <script src="js/modbus-client.js"></script>
+  <script>
+    const M = AEROVOLT_MODBUS;
+    const map = AEROVOLT_MODBUS_MAP;
+    function refreshMode() { document.getElementById('mode').textContent = AEROVOLT_EDGE.mode; }
+    function renderDevs() {
+      document.getElementById('devs').innerHTML = (map.devices || []).map(function (d) {
+        return '<tr><td>' + d.id + '</td><td>' + d.host + '</td><td>' + d.unitId + '</td><td>' +
+          (d.registers || []).length + '</td><td id="last-' + d.id + '">—</td></tr>';
+      }).join('');
+      document.getElementById('coil-addr').textContent = (map.emergency && map.emergency.address) || 0;
+    }
+    document.getElementById('tog').onclick = function () {
+      AEROVOLT_EDGE.setMode(AEROVOLT_EDGE.mode === 'DEMO' ? 'FIELD' : 'DEMO');
+      refreshMode();
+    };
+    document.getElementById('save').onclick = function () {
+      M.setConfig({
+        gatewayUrl: document.getElementById('gw').value.trim(),
+        token: document.getElementById('token').value.trim(),
+        pollIntervalMs: +document.getElementById('poll').value || 4000
+      });
+      document.getElementById('msg').className = 'mono ok';
+      document.getElementById('msg').textContent = 'Config guardada · edge webhook enlazado';
+    };
+    document.getElementById('read').onclick = async function () {
+      const results = await M.readAll();
+      document.getElementById('vals').textContent = JSON.stringify(results, null, 2);
+      (map.devices || []).forEach(function (d, i) {
+        const el = document.getElementById('last-' + d.id);
+        if (el && results[i] && results[i].ok) el.textContent = results[i].source + ' · ' + new Date().toLocaleTimeString();
+      });
+    };
+    document.getElementById('start').onclick = function () {
+      M.startPolling(function (results) {
+        document.getElementById('vals').textContent = JSON.stringify(results, null, 2);
+      });
+      document.getElementById('msg').textContent = 'Polling activo';
+    };
+    document.getElementById('stop').onclick = function () {
+      M.stopPolling();
+      document.getElementById('msg').textContent = 'Polling detenido';
+    };
+    document.getElementById('trip').onclick = async function () {
+      const res = await M.writeEmergency({
+        equipmentId: document.getElementById('eq').value, value: true,
+        reason: 'Trip modbus.html', operator: 'MODBUS-UI'
+      });
+      document.getElementById('trip-msg').className = res.ok ? 'mono ok' : 'mono bad';
+      document.getElementById('trip-msg').textContent = JSON.stringify(res);
+    };
+    document.getElementById('reset').onclick = async function () {
+      const res = await M.writeEmergency({
+        equipmentId: document.getElementById('eq').value, value: false,
+        reason: 'Reset', operator: 'MODBUS-UI'
+      });
+      document.getElementById('trip-msg').textContent = JSON.stringify(res);
+    };
+    const cfg = M.getConfig();
+    document.getElementById('gw').value = cfg.gatewayUrl || '';
+    document.getElementById('token').value = cfg.token || '';
+    document.getElementById('poll').value = cfg.pollIntervalMs || 4000;
+    refreshMode();
+    renderDevs();
+  </script>
+</body>
+</html>

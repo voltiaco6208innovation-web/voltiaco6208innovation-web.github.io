@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AEROVOLT · JARVIS Core v2</title>
+  <title>AEROVOLT · JARVIS Core v2.1</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="js/om-shell.css" />
   <style>
     .log { font-family: 'Share Tech Mono', monospace; font-size: .72rem; color: var(--muted); max-height: 180px; overflow: auto; white-space: pre-wrap; }
     .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .65rem; border: 1px solid var(--line); }
     .pill.wait { color: var(--warning); border-color: rgba(255,179,0,.4); }
+    .pill.live { color: var(--success); border-color: rgba(0,230,118,.4); }
   </style>
 </head>
 <body>
@@ -20,30 +21,33 @@
     </aside>
     <div class="main">
       <div class="top">
-        <div class="title">JARVIS Core v2</div>
-        <span class="badge-demo">ML STUB · LINEAR REGRESSION · DEMO</span>
-        <button type="button" class="primary" id="btn-run">Ejecutar ciclo ML</button>
+        <div class="title">JARVIS Core v2.1</div>
+        <span class="badge-demo" id="wx-badge">CLIMA · …</span>
+        <button type="button" class="primary" id="btn-run">Ciclo ML+CV + clima vivo</button>
       </div>
       <div class="kpis" id="kpis"></div>
       <div class="panel">
-        <h2>Soiling + ratio (única ruta de cálculo)</h2>
-        <p class="note">ratio = power / ((G/1000)×P_nom). Alerta si ratio &lt; 0.80 y G&gt;50. ML estima días a limpieza/falla por tendencia.</p>
+        <h2>Clima Sonora (Open-Meteo) → potencia esperada</h2>
+        <p class="note" id="wx-note">Cargando…</p>
+      </div>
+      <div class="panel">
+        <h2>Soiling (G en vivo × potencia)</h2>
         <div style="overflow:auto"><table class="data" id="soil-tbl"><thead><tr><th>INV</th><th>G</th><th>kW</th><th>Exp</th><th>Ratio</th><th>Alerta</th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="panel">
-        <h2>Predicciones ML → predicciones_falla_jarvis</h2>
-        <div style="overflow:auto"><table class="data" id="pred-tbl"><thead><tr><th>ID</th><th>INV</th><th>Prob%</th><th>Clean d</th><th>Fail d</th><th>Slope</th><th>Métrica</th></tr></thead><tbody></tbody></table></div>
+        <h2>Predicciones + cross-validation</h2>
+        <div style="overflow:auto"><table class="data" id="pred-tbl"><thead><tr><th>ID</th><th>INV</th><th>Prob%</th><th>Clean d</th><th>Fail d</th><th>CV MAE</th><th>Reliable</th><th>Métrica</th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="panel">
         <h2>Cola robótica</h2>
         <div style="overflow:auto"><table class="data" id="mis-tbl"><thead><tr><th>ID</th><th>Robot</th><th>Destino</th><th>Estado</th><th>INV</th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="panel">
-        <h2>True Financial Yield (USD)</h2>
-        <div style="overflow:auto"><table class="data" id="fin-tbl"><thead><tr><th>ID</th><th>Tipo</th><th>kWh</th><th>Tarifa</th><th>Costo USD</th><th>Yield USD</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+        <h2>True Financial Yield</h2>
+        <div style="overflow:auto"><table class="data" id="fin-tbl"><thead><tr><th>ID</th><th>Tipo</th><th>kWh</th><th>USD costo</th><th>Yield USD</th><th>Status</th></tr></thead><tbody></tbody></table></div>
       </div>
       <div class="panel">
-        <h2>Log ciclo</h2>
+        <h2>Log</h2>
         <div class="log" id="log"></div>
       </div>
     </div>
@@ -57,52 +61,81 @@
       var OM = AEROVOLT_OM;
       AEROVOLT_JARVIS.ensureStores();
       var s = OM._lastJarvisCycle || {};
+      var w = OM._weatherLive || {};
+
+      document.getElementById('wx-badge').textContent =
+        'CLIMA · ' + (w.source || s.weather_source || 'DEMO') + ' · ' + (w.status || '—');
+
+      document.getElementById('wx-note').textContent =
+        'Fuente: ' + (w.source || 'DEMO') +
+        ' | G=' + (w.irradiance != null ? w.irradiance : OM.env.irradiance) + ' W/m²' +
+        ' | T=' + (w.ambient_temp != null ? w.ambient_temp : OM.env.ambient_temp) + ' °C' +
+        ' | Viento=' + (w.wind_speed != null ? w.wind_speed : OM.env.wind_speed) + ' m/s' +
+        ' | Nubes=' + (w.cloud_cover != null ? w.cloud_cover : OM.env.cloud_cover) + '%' +
+        (w.error ? ' | Error: ' + w.error : '') +
+        ' | Ubicación Hermosillo/Sonora (Open-Meteo). Si falla la red, se usa DEMO.';
+
       document.getElementById('kpis').innerHTML = [
         ['Mode', s.mode || AEROVOLT_JARVIS.MODE],
+        ['Weather', s.weather_source || w.source || '—'],
+        ['G W/m²', s.irradiance != null ? s.irradiance : OM.env.irradiance],
+        ['CV MAE avg', s.cv_avg_mae != null ? s.cv_avg_mae : '—'],
         ['Soiling', s.soiling_alerts != null ? s.soiling_alerts : '—'],
         ['Predicciones', (OM.predicciones || []).length],
-        ['Misiones wait', (OM.misionesRoboticas || []).filter(function (m) { return m.estado_mision === 'WAITING_HARDWARE'; }).length],
-        ['True Yield USD', s.true_financial_yield_usd != null ? s.true_financial_yield_usd : '—'],
-        ['Costo abierto', s.open_incident_cost_usd != null ? s.open_incident_cost_usd : '—']
+        ['True Yield USD', s.true_financial_yield_usd != null ? s.true_financial_yield_usd : '—']
       ].map(function (x) {
-        return '<div class="kpi"><div class="l">' + x[0] + '</div><div class="v" style="font-size:.95rem">' + x[1] + '</div></div>';
+        return '<div class="kpi"><div class="l">' + x[0] + '</div><div class="v" style="font-size:.9rem">' + x[1] + '</div></div>';
       }).join('');
 
       var G = OM.env.irradiance;
-      document.querySelector('#soil-tbl tbody').innerHTML = OM.inverters.filter(function (i) { return i.plantId === 'PLT-001'; }).slice(0, 12).map(function (inv) {
-        var c = AEROVOLT_JARVIS.powerContext(inv, G);
-        var alert = G > 50 && c.ratio < 0.8;
-        return '<tr><td>' + inv.id + '</td><td>' + G + '</td><td>' + c.power + '</td><td>' + c.expected + '</td><td>' + c.ratio + '</td><td>' + (alert ? 'HIGH' : 'OK') + '</td></tr>';
-      }).join('');
+      document.querySelector('#soil-tbl tbody').innerHTML = OM.inverters
+        .filter(function (i) { return i.plantId === 'PLT-001'; })
+        .slice(0, 12)
+        .map(function (inv) {
+          var c = AEROVOLT_JARVIS.powerContext(inv, G);
+          var alert = G > 50 && c.ratio < 0.8;
+          return '<tr><td>' + inv.id + '</td><td>' + G + '</td><td>' + c.power + '</td><td>' + c.expected +
+            '</td><td>' + c.ratio + '</td><td>' + (alert ? 'HIGH' : 'OK') + '</td></tr>';
+        }).join('');
 
-      document.querySelector('#pred-tbl tbody').innerHTML = (OM.predicciones || []).slice(0, 25).map(function (p) {
-        return '<tr><td>' + p.id + '</td><td>' + p.inversor_id + '</td><td>' + p.probabilidad_falla + '</td><td>' +
-          (p.days_to_clean != null ? p.days_to_clean : '—') + '</td><td>' +
-          (p.days_to_fail != null ? p.days_to_fail : '—') + '</td><td>' +
-          (p.ml_slope != null ? p.ml_slope : '—') + '</td><td>' + p.metrica_anomala + '</td></tr>';
-      }).join('') || '<tr><td colspan="7">Ejecuta ciclo ML</td></tr>';
+      document.querySelector('#pred-tbl tbody').innerHTML =
+        (OM.predicciones || []).slice(0, 25).map(function (p) {
+          return '<tr><td>' + p.id + '</td><td>' + p.inversor_id + '</td><td>' + p.probabilidad_falla +
+            '</td><td>' + (p.days_to_clean != null ? p.days_to_clean : '—') +
+            '</td><td>' + (p.days_to_fail != null ? p.days_to_fail : '—') +
+            '</td><td>' + (p.cv_mae != null ? p.cv_mae : '—') +
+            '</td><td>' + (p.cv_reliable === true ? 'YES' : p.cv_reliable === false ? 'NO' : '—') +
+            '</td><td>' + p.metrica_anomala + '</td></tr>';
+        }).join('') || '<tr><td colspan="8">Ejecuta ciclo</td></tr>';
 
-      document.querySelector('#mis-tbl tbody').innerHTML = (OM.misionesRoboticas || []).slice(0, 15).map(function (m) {
-        return '<tr><td>' + m.id + '</td><td>' + m.tipo_robot + '</td><td>' + m.coordenadas_destino_xyz +
-          '</td><td><span class="pill wait">' + m.estado_mision + '</span></td><td>' + (m.inversor_id || '—') + '</td></tr>';
-      }).join('') || '<tr><td colspan="5">Cola vacía</td></tr>';
+      document.querySelector('#mis-tbl tbody').innerHTML =
+        (OM.misionesRoboticas || []).slice(0, 15).map(function (m) {
+          return '<tr><td>' + m.id + '</td><td>' + m.tipo_robot + '</td><td>' + m.coordenadas_destino_xyz +
+            '</td><td><span class="pill wait">' + m.estado_mision + '</span></td><td>' +
+            (m.inversor_id || '—') + '</td></tr>';
+        }).join('') || '<tr><td colspan="5">Cola vacía</td></tr>';
 
       document.querySelector('#fin-tbl tbody').innerHTML = OM.incidents.slice(0, 15).map(function (i) {
-        return '<tr><td>' + i.id + '</td><td>' + (i.tipo_falla || i.type) + '</td><td>' + (i.energyLoss_kWh || 0) +
-          '</td><td>' + (i.tarifa_aplicada_usd_kwh || 0.12) + '</td><td>$' + (i.costo_financiero_acumulado_usd != null ? i.costo_financiero_acumulado_usd : '—') +
+        return '<tr><td>' + i.id + '</td><td>' + (i.tipo_falla || i.type) + '</td><td>' +
+          (i.energyLoss_kWh || 0) + '</td><td>$' +
+          (i.costo_financiero_acumulado_usd != null ? i.costo_financiero_acumulado_usd : '—') +
           '</td><td>$' + (i.true_financial_yield_usd != null ? i.true_financial_yield_usd : '—') +
           '</td><td>' + i.status + '</td></tr>';
       }).join('');
 
-      document.getElementById('log').textContent = (s.logs && s.logs.length) ? s.logs.join('\n') : (s.at ? JSON.stringify(s, null, 0) : 'Sin ciclo');
+      document.getElementById('log').textContent =
+        (s.logs && s.logs.length) ? s.logs.join('\n') : (s.at ? JSON.stringify(s) : 'Sin ciclo');
     }
 
-    document.getElementById('btn-run').onclick = function () {
-      AEROVOLT_JARVIS.runCycle('PLT-001');
-      render();
-    };
-    AEROVOLT_JARVIS.runCycle('PLT-001');
-    render();
+    function run() {
+      document.getElementById('log').textContent = 'Obteniendo clima Open-Meteo Sonora y ejecutando ML+CV…';
+      AEROVOLT_JARVIS.runCycle('PLT-001').then(function () {
+        render();
+      });
+    }
+
+    document.getElementById('btn-run').onclick = run;
+    run();
   </script>
 </body>
 </html>

@@ -2,6 +2,7 @@
 (function (g) {
   const LINKS = [
     { href: 'control-center.html', label: 'Control Center' },
+    { href: 'jarvis.html', label: 'JARVIS Core' },
     { href: 'monitor.html', label: 'Monitor' },
     { href: 'industrial-3d.html', label: '3D Plant' },
     { href: 'performance.html', label: 'Performance' },

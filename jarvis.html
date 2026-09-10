@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AEROVOLT · JARVIS Core</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="js/om-shell.css" />
+  <style>
+    .log { font-family: 'Share Tech Mono', monospace; font-size: .72rem; color: var(--muted); max-height: 160px; overflow: auto; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .65rem; border: 1px solid var(--line); }
+    .pill.wait { color: var(--warning); border-color: rgba(255,179,0,.4); }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand"><span class="mark">A</span><div><h1>AEROVOLT O&M</h1></div></div>
+      <nav id="om-nav"></nav>
+    </aside>
+    <div class="main">
+      <div class="top">
+        <div class="title">JARVIS Core</div>
+        <span class="badge-demo">DATA SOURCE: DEMO · RULE ENGINE</span>
+        <button type="button" class="primary" id="btn-run">Ejecutar ciclo</button>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <h2>Análisis suciedad (irradiancia × potencia)</h2>
+        <p class="note">Si power_kw &lt; 80% de (G/1000)×P_nominal → incidente PERDIDA_SUCIEDAD + misión ORUGA_CLEAN en WAITING_HARDWARE.</p>
+        <div style="overflow:auto"><table class="data" id="soil-tbl"><thead><tr><th>INV</th><th>G W/m²</th><th>kW</th><th>Esperado</th><th>Ratio</th><th>Alerta</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Predicciones de falla (pre-falla)</h2>
+        <div style="overflow:auto"><table class="data" id="pred-tbl"><thead><tr><th>ID</th><th>INV</th><th>Prob %</th><th>ETA min</th><th>Métrica</th><th>Fecha</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Cola misiones robóticas</h2>
+        <div style="overflow:auto"><table class="data" id="mis-tbl"><thead><tr><th>ID</th><th>Robot</th><th>Destino</th><th>Estado</th><th>INV</th><th>Token</th></tr></thead><tbody></tbody></table></div>
+        <p class="note">Hardware físico aún no conectado. Estado WAITING_HARDWARE es intencional.</p>
+      </div>
+      <div class="panel">
+        <h2>Incidentes · costo financiero</h2>
+        <div style="overflow:auto"><table class="data" id="fin-tbl"><thead><tr><th>ID</th><th>Tipo</th><th>kWh</th><th>Tarifa</th><th>USD acum.</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Log ciclo</h2>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+  <script src="js/om-data.js"></script>
+  <script src="js/om-context.js"></script>
+  <script src="js/om-nav.js"></script>
+  <script src="js/jarvis-core.js"></script>
+  <script>
+    function render() {
+      var OM = AEROVOLT_OM;
+      AEROVOLT_JARVIS.ensureStores();
+      var s = OM._lastJarvisCycle || {};
+      document.getElementById('kpis').innerHTML = [
+        ['Soiling alerts', s.soiling_alerts != null ? s.soiling_alerts : '—'],
+        ['Predicciones', (OM.predicciones || []).length],
+        ['Misiones wait', (OM.misionesRoboticas || []).filter(function (m) { return m.estado_mision === 'WAITING_HARDWARE'; }).length],
+        ['Costo abierto USD', (s.open_incident_cost_usd != null ? s.open_incident_cost_usd.toFixed(2) : OM.incidents.filter(function (i) { return !i.closed; }).reduce(function (a, i) { return a + (Number(i.costo_financiero_acumulado_usd) || 0); }, 0).toFixed(2))]
+      ].map(function (x) {
+        return '<div class="kpi"><div class="l">' + x[0] + '</div><div class="v">' + x[1] + '</div></div>';
+      }).join('');
+
+      var envG = OM.env.irradiance;
+      document.querySelector('#soil-tbl tbody').innerHTML = OM.inverters.filter(function (i) { return i.plantId === 'PLT-001'; }).slice(0, 12).map(function (inv) {
+        var pNom = inv.expected_kw > 0 ? inv.expected_kw / 0.95 : 100;
+        var exp = (envG / 1000) * pNom;
+        var ratio = exp > 0 ? inv.power_kw / exp : 1;
+        var alert = envG > 50 && ratio < 0.8;
+        return '<tr><td>' + inv.id + '</td><td>' + envG + '</td><td>' + inv.power_kw + '</td><td>' + exp.toFixed(1) + '</td><td>' + ratio.toFixed(2) + '</td><td>' + (alert ? 'HIGH' : 'OK') + '</td></tr>';
+      }).join('');
+
+      document.querySelector('#pred-tbl tbody').innerHTML = (OM.predicciones || []).slice(0, 20).map(function (p) {
+        return '<tr><td>' + p.id + '</td><td>' + p.inversor_id + '</td><td>' + p.probabilidad_falla + '</td><td>' + p.tiempo_estimado_paro_mins + '</td><td>' + p.metrica_anomala + '</td><td>' + p.fecha_prediccion + '</td></tr>';
+      }).join('') || '<tr><td colspan="6">Sin predicciones — ejecuta ciclo</td></tr>';
+
+      document.querySelector('#mis-tbl tbody').innerHTML = (OM.misionesRoboticas || []).slice(0, 20).map(function (m) {
+        return '<tr><td>' + m.id + '</td><td>' + m.tipo_robot + '</td><td>' + m.coordenadas_destino_xyz + '</td><td><span class="pill wait">' + m.estado_mision + '</span></td><td>' + (m.inversor_id || '—') + '</td><td>' + (m.token_autenticacion || '').slice(0, 12) + '…</td></tr>';
+      }).join('') || '<tr><td colspan="6">Cola vacía</td></tr>';
+
+      document.querySelector('#fin-tbl tbody').innerHTML = OM.incidents.slice(0, 15).map(function (i) {
+        return '<tr><td>' + i.id + '</td><td>' + (i.tipo_falla || i.type) + '</td><td>' + (i.energyLoss_kWh || 0) + '</td><td>' + (i.tarifa_aplicada_usd_kwh || 0.12) + '</td><td>$' + (i.costo_financiero_acumulado_usd != null ? i.costo_financiero_acumulado_usd : '—') + '</td><td>' + i.status + '</td></tr>';
+      }).join('');
+
+      document.getElementById('log').textContent = (s.logs && s.logs.length) ? s.logs.join('\n') : (s.at ? 'Ciclo ' + s.at + ' · mode ' + s.mode : 'Sin ciclo aún');
+    }
+
+    document.getElementById('btn-run').onclick = function () {
+      AEROVOLT_JARVIS.runCycle('PLT-001');
+      render();
+    };
+    AEROVOLT_JARVIS.runCycle('PLT-001');
+    render();
+  </script>
+</body>
+</html>

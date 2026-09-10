@@ -1,8 +1,6 @@
--- AEROVOLT O&M — Schema predictivo + cola robótica + finanzas de incidentes
--- Para PostgreSQL / Timescale (producción). Hoy la web usa DEMO en JS equivalente.
--- source de verdad futura: API + esta BD.
+-- AEROVOLT O&M — Schema predictivo + cola robótica + finanzas (JARVIS v2)
+-- PostgreSQL / Timescale. La web DEMO usa el equivalente en js/jarvis-core.js
 
--- Tabla para almacenar patrones de pre-falla (Predicción Inteligente)
 CREATE TABLE IF NOT EXISTS predicciones_falla_jarvis (
     id VARCHAR(50) PRIMARY KEY,
     inversor_id VARCHAR(50),
@@ -11,11 +9,14 @@ CREATE TABLE IF NOT EXISTS predicciones_falla_jarvis (
     metrica_anomala VARCHAR(50),
     planta_id VARCHAR(50),
     sector VARCHAR(10),
+    days_to_clean INT,
+    days_to_fail INT,
+    ml_slope NUMERIC(12,6),
+    ml_mode VARCHAR(40) DEFAULT 'ML_STUB_LINEAR_REGRESSION',
     fecha_prediccion TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     source VARCHAR(20) DEFAULT 'DEMO'
 );
 
--- Cola de misiones automatizadas para Hardware Robótico (Drones/Orugas)
 CREATE TABLE IF NOT EXISTS cola_misiones_roboticas (
     id VARCHAR(50) PRIMARY KEY,
     planta_id VARCHAR(50),
@@ -29,11 +30,9 @@ CREATE TABLE IF NOT EXISTS cola_misiones_roboticas (
     source VARCHAR(20) DEFAULT 'DEMO'
 );
 
--- Finanzas en incidentes (si la tabla incidentes ya existe en backend)
+-- Incidentes: columnas financieras (ejecutar si la tabla ya existe)
 -- ALTER TABLE incidentes ADD COLUMN IF NOT EXISTS tarifa_aplicada_usd_kwh NUMERIC(6,4) DEFAULT 0.12;
 -- ALTER TABLE incidentes ADD COLUMN IF NOT EXISTS costo_financiero_acumulado_usd NUMERIC(12,2) DEFAULT 0.0;
 -- ALTER TABLE incidentes ADD COLUMN IF NOT EXISTS perdida_estimada_mwh NUMERIC(12,4) DEFAULT 0.0;
+-- ALTER TABLE incidentes ADD COLUMN IF NOT EXISTS true_financial_yield_usd NUMERIC(12,2) DEFAULT 0.0;
 -- ALTER TABLE incidentes ADD COLUMN IF NOT EXISTS tipo_falla VARCHAR(50);
-
--- Índice útil para no duplicar alertas de suciedad abiertas
--- CREATE INDEX IF NOT EXISTS idx_inc_soil_open ON incidentes (inversor_id) WHERE tipo_falla = 'PERDIDA_SUCIEDAD' AND estado != 'CLOSED';

@@ -1,91 +1,226 @@
 /**
- * AEROVOLT JARVIS CORE — ciclo de análisis O&M
- * - Eficiencia / pérdida por suciedad (irradiancia × potencia)
- * - Predicciones de pre-falla
- * - Cola de misiones robóticas (WAITING_HARDWARE)
- * - Costo financiero acumulado de incidentes
- *
- * DEMO en memoria (AEROVOLT_OM). Equivalente SQL en sql/schema_predictive_robotics.sql
- * No finge IA LLM ni hardware físico conectado.
+ * AEROVOLT JARVIS CORE v2 — ultraligero
+ * - Una sola ruta de pérdida / soiling / finanzas
+ * - ML STUB: regresión lineal sobre historial local (temp + ratio potencia)
+ * - Alimenta predicciones_falla_jarvis + True Financial Yield (USD)
+ * DEMO en memoria. No es un modelo entrenado en servidor ni LLM.
  */
 (function (g) {
-  const SOURCE = 'DEMO';
-  const TARIFF_USD_KWH = 0.12;
-  const SOIL_THRESHOLD = 0.80; // potencia < 80% de esperada → suciedad
+  'use strict';
 
-  function nowIso() { return new Date().toISOString(); }
-  function uid(prefix) { return prefix + '-' + Date.now().toString(36).toUpperCase() + Math.floor(Math.random() * 100).toString().padStart(2, '0'); }
+  var SOURCE = 'DEMO';
+  var MODE = 'ML_STUB_LINEAR_REGRESSION';
+  var TARIFF = 0.12;
+  var SOIL_RATIO = 0.80;
+  var HIST_MAX = 21; // ~3 semanas de puntos diarios DEMO
 
-  function ensureStores(OM) {
-    if (!OM.predicciones) OM.predicciones = [];
-    if (!OM.misionesRoboticas) OM.misionesRoboticas = [];
-    OM.incidents.forEach(function (inc) {
-      if (inc.tarifa_aplicada_usd_kwh == null) inc.tarifa_aplicada_usd_kwh = TARIFF_USD_KWH;
-      if (inc.costo_financiero_acumulado_usd == null) {
-        var lossKwh = Number(inc.energyLoss_kWh) || 0;
-        inc.costo_financiero_acumulado_usd = +(lossKwh * TARIFF_USD_KWH).toFixed(2);
-      }
-      if (inc.perdida_estimada_mwh == null) {
-        inc.perdida_estimada_mwh = +((Number(inc.energyLoss_kWh) || 0) / 1000).toFixed(4);
-      }
-      if (!inc.tipo_falla && inc.type) {
-        inc.tipo_falla = String(inc.type).replace(/\s+/g, '_').toUpperCase();
-      }
-    });
+  function iso() { return new Date().toISOString(); }
+  function uid(p) { return p + '-' + Date.now().toString(36).toUpperCase() + (Math.random() * 90 + 10 | 0); }
+
+  /** Regresión lineal simple y = a + b*x → retorna {a,b} o null */
+  function linearFit(xs, ys) {
+    var n = xs.length;
+    if (n < 3) return null;
+    var sx = 0, sy = 0, sxx = 0, sxy = 0, i;
+    for (i = 0; i < n; i++) {
+      sx += xs[i]; sy += ys[i];
+      sxx += xs[i] * xs[i];
+      sxy += xs[i] * ys[i];
+    }
+    var den = n * sxx - sx * sx;
+    if (Math.abs(den) < 1e-9) return null;
+    var b = (n * sxy - sx * sy) / den;
+    var a = (sy - b * sx) / n;
+    return { a: a, b: b };
   }
 
-  /** Nominal estimado del inversor para modelo de soiling (DEMO). */
+  /** Cruce de umbral: días hasta y <= threshold si la pendiente es negativa */
+  function daysUntilThreshold(fit, xLast, yLast, threshold) {
+    if (!fit || fit.b >= -1e-6) return null;
+    var xHit = (threshold - fit.a) / fit.b;
+    var days = xHit - xLast;
+    if (days < 0) return 0;
+    return Math.min(90, Math.round(days));
+  }
+
+  function ensure(OM) {
+    if (!OM.predicciones) OM.predicciones = [];
+    if (!OM.misionesRoboticas) OM.misionesRoboticas = [];
+    if (!OM._mlHistory) OM._mlHistory = {}; // inversor_id -> [{d, temp, ratio, power}]
+    if (!OM._jarvisCfg) OM._jarvisCfg = { tariff: TARIFF, soilRatio: SOIL_RATIO };
+  }
+
   function nominalKw(inv) {
-    if (inv.expected_kw && inv.expected_kw > 0) return inv.expected_kw / 0.95;
-    return 100;
+    return inv.expected_kw > 0 ? inv.expected_kw / 0.95 : 100;
+  }
+
+  /** Único cálculo de ratio soiling / pérdida esperada */
+  function powerContext(inv, irradiance) {
+    var g = Number(irradiance) || 0;
+    var power = Number(inv.power_kw) || 0;
+    var pNom = nominalKw(inv);
+    var expected = g > 0 ? (g / 1000) * pNom : (Number(inv.expected_kw) || pNom);
+    var ratio = expected > 0 ? power / expected : 1;
+    return {
+      power: power,
+      expected: +expected.toFixed(2),
+      ratio: +ratio.toFixed(4),
+      irradiance: g,
+      pNom: pNom
+    };
+  }
+
+  /** True Financial Yield / pérdida en USD (única función financiera) */
+  function financialFromLossKwh(lossKwh, tariff) {
+    var t = tariff > 0 ? tariff : TARIFF;
+    var kwh = Math.max(0, Number(lossKwh) || 0);
+    return {
+      energyLoss_kWh: +kwh.toFixed(2),
+      perdida_estimada_mwh: +(kwh / 1000).toFixed(4),
+      tarifa_aplicada_usd_kwh: t,
+      costo_financiero_acumulado_usd: +(kwh * t).toFixed(2),
+      true_financial_yield_usd: +(-(kwh * t)).toFixed(2) // negativo = pérdida de yield
+    };
+  }
+
+  function pushHistory(OM, inv, ctx) {
+    var key = inv.id;
+    if (!OM._mlHistory[key]) OM._mlHistory[key] = [];
+    var h = OM._mlHistory[key];
+    var dayIndex = h.length ? h[h.length - 1].d + 1 : 0;
+    // DEMO: sintetiza tendencia si historial corto (degradación + ruido)
+    var temp = inv.temp_c != null ? inv.temp_c : 42;
+    h.push({
+      d: dayIndex,
+      temp: temp,
+      ratio: ctx.ratio,
+      power: ctx.power,
+      expected: ctx.expected
+    });
+    if (h.length > HIST_MAX) h.splice(0, h.length - HIST_MAX);
+    // Bootstrap: si solo 1 punto, rellena tendencia DEMO de semanas previas
+    if (h.length === 1) {
+      var base = ctx.ratio;
+      for (var i = HIST_MAX - 1; i >= 1; i--) {
+        var r = Math.min(1.05, base + i * 0.008 + (Math.random() - 0.5) * 0.01);
+        if (inv.status === 'FAULT' || inv.status === 'DEGRADED') r = Math.max(0.4, r - 0.02 * (HIST_MAX - i));
+        h.unshift({
+          d: dayIndex - i,
+          temp: temp + (Math.random() - 0.5) * 4,
+          ratio: +r.toFixed(4),
+          power: +(ctx.expected * r).toFixed(2),
+          expected: ctx.expected
+        });
+      }
+      if (h.length > HIST_MAX) h.splice(0, h.length - HIST_MAX);
+      // reindex
+      for (var j = 0; j < h.length; j++) h[j].d = j;
+    }
+    return h;
   }
 
   /**
-   * Cruza irradiancia con kW reales.
-   * potencia_esperada ≈ (G / 1000) * P_nominal
-   * Si power_kw < 80% de esperada → PERDIDA_SUCIEDAD + misión ORUGA_CLEAN
+   * ML STUB: aprende pendiente de ratio (y temperatura como covariable simple).
+   * Predice días a limpieza (ratio→0.80) y días a falla operativa (ratio→0.55 o reglas de estado).
    */
-  function analizarEficienciaSuciedadJarvis(OM, inv, plantaId) {
-    var env = OM.env || {};
-    var irradiancia = Number(env.irradiance);
-    if (!(irradiancia > 50)) return null; // noche / datos inválidos: no evaluar soiling
+  function mlPredict(OM, inv, ctx) {
+    var h = pushHistory(OM, inv, ctx);
+    var xs = h.map(function (p) { return p.d; });
+    var ys = h.map(function (p) { return p.ratio; });
+    var fit = linearFit(xs, ys);
+    var xLast = xs[xs.length - 1];
+    var yLast = ys[ys.length - 1];
 
-    var pNom = nominalKw(inv);
-    var potenciaEsperada = (irradiancia / 1000.0) * pNom;
-    var power = Number(inv.power_kw) || 0;
-    var ratio = potenciaEsperada > 0 ? power / potenciaEsperada : 1;
+    var daysClean = daysUntilThreshold(fit, xLast, yLast, SOIL_RATIO);
+    var daysFail = daysUntilThreshold(fit, xLast, yLast, 0.55);
 
-    var result = {
-      inversor_id: inv.id,
-      planta_id: plantaId,
-      irradiancia_w_m2: irradiancia,
-      potencia_kw: power,
-      potencia_esperada_kw: +potenciaEsperada.toFixed(2),
-      ratio: +ratio.toFixed(3),
-      soiling_alert: ratio < SOIL_THRESHOLD,
-      source: SOURCE
-    };
+    // Ajuste por temperatura media reciente (degradación térmica DEMO)
+    var tAvg = h.slice(-7).reduce(function (s, p) { return s + p.temp; }, 0) / Math.min(7, h.length);
+    if (tAvg >= 55 && daysFail != null) daysFail = Math.max(0, daysFail - 3);
+    if (tAvg >= 55 && daysClean != null) daysClean = Math.max(0, daysClean - 1);
 
-    if (!result.soiling_alert) return result;
+    var prob = 0;
+    var metric = 'trend_stable';
+    var etaMins = null;
 
-    // ¿Ya hay incidente abierto de suciedad para este inversor?
-    var open = OM.incidents.find(function (i) {
-      return (i.equipment === inv.id || i.inversor_id === inv.id) &&
-        (i.tipo_falla === 'PERDIDA_SUCIEDAD' || i.type === 'SOILING' || i.type === 'Excessive soiling') &&
-        !i.closed && i.status !== 'CLOSED';
-    });
-
-    if (open) {
-      result.incident_id = open.id;
-      return result;
+    if (inv.status === 'FAULT') {
+      prob = 94; metric = 'status_FAULT'; etaMins = 20;
+    } else if (inv.status === 'OFFLINE') {
+      prob = 90; metric = 'comm_OFFLINE'; etaMins = 40;
+    } else if (inv.status === 'DEGRADED') {
+      prob = 76; metric = 'status_DEGRADED'; etaMins = 120;
+    } else if (daysFail != null && daysFail <= 7) {
+      prob = Math.min(95, 60 + (7 - daysFail) * 5);
+      metric = 'ml_ratio_collapse';
+      etaMins = Math.max(30, daysFail * 24 * 60);
+    } else if (daysClean != null && daysClean <= 5) {
+      prob = Math.min(85, 45 + (5 - daysClean) * 6);
+      metric = 'ml_soiling_trend';
+      etaMins = Math.max(60, daysClean * 24 * 60);
+    } else if (ctx.ratio < SOIL_RATIO && ctx.irradiance > 50) {
+      prob = 70; metric = 'soiling_now'; etaMins = 180;
+    } else if (fit && fit.b < -0.01) {
+      prob = 52; metric = 'ml_slow_degradation';
+      etaMins = daysFail != null ? daysFail * 24 * 60 : 14 * 24 * 60;
     }
 
-    var lossKwh = Math.max(0, (potenciaEsperada - power) * 0.25); // DEMO: ~15 min equivalentes
+    if (prob < 50) {
+      return {
+        skip: true,
+        days_to_clean: daysClean,
+        days_to_fail: daysFail,
+        slope: fit ? +fit.b.toFixed(5) : null,
+        tAvg: +tAvg.toFixed(1)
+      };
+    }
+
+    // Dedup: misma métrica en < 30 min
+    var recent = OM.predicciones.find(function (p) {
+      return p.inversor_id === inv.id && p.metrica_anomala === metric &&
+        (Date.now() - new Date(p.fecha_prediccion).getTime()) < 30 * 60 * 1000;
+    });
+    if (recent) {
+      recent.days_to_clean = daysClean;
+      recent.days_to_fail = daysFail;
+      recent.ml_slope = fit ? +fit.b.toFixed(5) : null;
+      return { skip: true, existing: recent };
+    }
+
+    var pred = {
+      id: uid('PRED'),
+      inversor_id: inv.id,
+      probabilidad_falla: prob,
+      tiempo_estimado_paro_mins: etaMins,
+      metrica_anomala: metric,
+      planta_id: inv.plantId,
+      sector: inv.sector,
+      fecha_prediccion: iso(),
+      days_to_clean: daysClean,
+      days_to_fail: daysFail,
+      ml_slope: fit ? +fit.b.toFixed(5) : null,
+      ml_mode: MODE,
+      source: SOURCE
+    };
+    OM.predicciones.unshift(pred);
+    if (OM.predicciones.length > 100) OM.predicciones.length = 100;
+    return { skip: false, pred: pred };
+  }
+
+  function openSoilIncident(OM, inv, ctx) {
+    var open = OM.incidents.find(function (i) {
+      return (i.equipment === inv.id || i.inversor_id === inv.id) &&
+        (i.tipo_falla === 'PERDIDA_SUCIEDAD' || i.type === 'SOILING') &&
+        !i.closed && i.status !== 'CLOSED';
+    });
+    if (open) return open;
+
+    var lossKwh = Math.max(0, (ctx.expected - ctx.power) * 0.25);
+    var fin = financialFromLossKwh(lossKwh, OM._jarvisCfg.tariff);
     var incId = uid('SOIL');
     var inc = {
       id: incId,
-      time: nowIso(),
-      plantId: plantaId,
+      time: iso(),
+      plantId: inv.plantId,
       sector: inv.sector,
       equipment: inv.id,
       inversor_id: inv.id,
@@ -93,171 +228,124 @@
       tipo_falla: 'PERDIDA_SUCIEDAD',
       severity: 'HIGH',
       status: 'NEW',
-      description: 'Pérdida por suciedad: potencia ' + power + ' kW vs esperada ' + potenciaEsperada.toFixed(1) + ' kW (G=' + irradiancia + ' W/m², ratio=' + ratio.toFixed(2) + ')',
-      possibleCause: 'Soiling / polvo / excremento',
-      recommendedAction: 'Despachar limpieza priorizada (oruga o crew)',
+      description: 'Soiling ratio ' + ctx.ratio + ' (G=' + ctx.irradiance + ' W/m², P=' + ctx.power + ' vs exp ' + ctx.expected + ')',
+      possibleCause: 'Polvo / suciedad / degradación de superficie',
+      recommendedAction: 'Limpieza priorizada (oruga o crew)',
       assignedTo: null,
       acknowledgedAt: null,
       resolvedAt: null,
       closedAt: null,
       closed: false,
-      energyLoss_kWh: +lossKwh.toFixed(2),
-      perdida_estimada_mwh: +(lossKwh / 1000).toFixed(4),
-      tarifa_aplicada_usd_kwh: TARIFF_USD_KWH,
-      costo_financiero_acumulado_usd: +(lossKwh * TARIFF_USD_KWH).toFixed(2),
       source: SOURCE
     };
+    Object.keys(fin).forEach(function (k) { inc[k] = fin[k]; });
     OM.incidents.unshift(inc);
 
-    var misId = uid('MIS');
-    var token = uid('TOK').replace(/-/g, '').slice(0, 32);
-    var mision = {
-      id: misId,
-      planta_id: plantaId,
+    OM.misionesRoboticas.unshift({
+      id: uid('MIS'),
+      planta_id: inv.plantId,
       tipo_robot: 'ORUGA_CLEAN',
       coordenadas_destino_xyz: 'SECTOR_' + inv.sector + '_NEAR_' + inv.id,
       estado_mision: 'WAITING_HARDWARE',
-      token_autenticacion: token,
+      token_autenticacion: uid('TOK').replace(/-/g, '').slice(0, 32),
       inversor_id: inv.id,
       incident_id: incId,
-      fecha_creacion: nowIso(),
+      fecha_creacion: iso(),
       source: SOURCE
-    };
-    OM.misionesRoboticas.unshift(mision);
+    });
 
     if (OM.events) {
       OM.events.unshift({
-        ts: nowIso(), plantId: plantaId, sector: inv.sector, equipment: inv.id,
+        ts: iso(), plantId: inv.plantId, sector: inv.sector, equipment: inv.id,
         event: 'SOILING_ALERT_AND_MISSION_QUEUED', severity: 'HIGH', status: 'NEW',
         user: 'jarvis-core', category: 'PERFORMANCE', source: SOURCE
       });
     }
-
-    result.incident_id = incId;
-    result.mission_id = misId;
-    result.jarvis_log = '[JARVIS CORE] Alerta suciedad ' + inv.id + ' ratio=' + ratio.toFixed(2) + ' misión ' + misId + ' WAITING_HARDWARE';
-    return result;
+    return inc;
   }
 
-  /** Pre-falla: temperatura alta, degradación, offline, desviación fuerte. */
-  function predecirFalla(OM, inv, plantaId) {
-    var prob = 0;
-    var mins = null;
-    var metrica = null;
-
-    if (inv.status === 'FAULT') {
-      prob = 92; mins = 15; metrica = 'status_FAULT';
-    } else if (inv.status === 'OFFLINE') {
-      prob = 88; mins = 30; metrica = 'comm_OFFLINE';
-    } else if (inv.status === 'DEGRADED') {
-      prob = 71; mins = 90; metrica = 'status_DEGRADED';
-    } else if (inv.temp_c != null && inv.temp_c >= 58) {
-      prob = 78; mins = 45; metrica = 'over_temperature';
-    } else if (inv.temp_c != null && inv.temp_c >= 52) {
-      prob = 55; mins = 120; metrica = 'elevated_temperature';
-    } else if (inv.expected_kw > 0 && inv.power_kw < inv.expected_kw * 0.75 && inv.comm === 'ONLINE') {
-      prob = 64; mins = 180; metrica = 'power_deviation';
-    }
-
-    if (prob < 50) return null;
-
-    // Evitar duplicar predicción abierta reciente mismo equipo+métrica
-    var recent = OM.predicciones.find(function (p) {
-      return p.inversor_id === inv.id && p.metrica_anomala === metrica &&
-        (Date.now() - new Date(p.fecha_prediccion).getTime()) < 30 * 60 * 1000;
-    });
-    if (recent) return recent;
-
-    var pred = {
-      id: uid('PRED'),
-      inversor_id: inv.id,
-      probabilidad_falla: prob,
-      tiempo_estimado_paro_mins: mins,
-      metrica_anomala: metrica,
-      planta_id: plantaId,
-      sector: inv.sector,
-      fecha_prediccion: nowIso(),
-      source: SOURCE
-    };
-    OM.predicciones.unshift(pred);
-    return pred;
-  }
-
-  /** Recalcula costo financiero de todos los incidentes abiertos. */
-  function actualizarCostosFinancieros(OM) {
+  /** Recalcula finanzas de todos los incidentes — una sola pasada */
+  function refreshIncidentFinance(OM) {
+    var tariff = OM._jarvisCfg.tariff;
+    var totalLoss = 0;
     OM.incidents.forEach(function (inc) {
-      var tariff = Number(inc.tarifa_aplicada_usd_kwh);
-      if (!(tariff > 0)) tariff = TARIFF_USD_KWH;
-      inc.tarifa_aplicada_usd_kwh = tariff;
       var loss = Number(inc.energyLoss_kWh) || 0;
-      // DEMO: si sigue abierto, acumula un poco con el tiempo (simula pérdida continua)
-      if (!inc.closed && (inc.status === 'NEW' || inc.status === 'ACKNOWLEDGED' || inc.status === 'INVESTIGATING' || inc.status === 'IN PROGRESS')) {
-        loss = loss + 0.05; // +0.05 kWh por ciclo demo
-        inc.energyLoss_kWh = +loss.toFixed(2);
+      if (!inc.closed && (inc.status === 'NEW' || inc.status === 'ACKNOWLEDGED' ||
+          inc.status === 'INVESTIGATING' || inc.status === 'IN PROGRESS')) {
+        loss += 0.05;
       }
-      inc.perdida_estimada_mwh = +(loss / 1000).toFixed(4);
-      inc.costo_financiero_acumulado_usd = +(loss * tariff).toFixed(2);
+      var fin = financialFromLossKwh(loss, tariff);
+      Object.keys(fin).forEach(function (k) { inc[k] = fin[k]; });
+      if (!inc.closed) totalLoss += fin.costo_financiero_acumulado_usd;
     });
+    return totalLoss;
   }
 
-  /** Ciclo principal JARVIS sobre una planta. */
   function runJarvisCycle(plantId) {
     var OM = g.AEROVOLT_OM;
     if (!OM) return { ok: false, error: 'AEROVOLT_OM missing' };
-    ensureStores(OM);
+    ensure(OM);
     plantId = plantId || 'PLT-001';
-
+    var irradiance = (OM.env && OM.env.irradiance) || 0;
     var list = (OM.equipment || OM.inverters || []).filter(function (i) {
       return i.plantId === plantId;
     });
 
-    var soilResults = [];
-    var preds = [];
-    var logs = [];
+    var soilN = 0, predN = 0, logs = [];
 
-    list.forEach(function (inv) {
-      var soil = analizarEficienciaSuciedadJarvis(OM, inv, plantId);
-      if (soil) {
-        soilResults.push(soil);
-        if (soil.jarvis_log) logs.push(soil.jarvis_log);
+    for (var i = 0; i < list.length; i++) {
+      var inv = list[i];
+      var ctx = powerContext(inv, irradiance);
+
+      // ML + predicción (incluye tendencia soiling a N días)
+      var ml = mlPredict(OM, inv, ctx);
+      if (ml && ml.pred) {
+        predN++;
+        logs.push('[ML] ' + inv.id + ' prob=' + ml.pred.probabilidad_falla +
+          '% clean_in=' + ml.pred.days_to_clean + 'd fail_in=' + ml.pred.days_to_fail +
+          'd slope=' + ml.pred.ml_slope);
       }
-      var pred = predecirFalla(OM, inv, plantId);
-      if (pred) preds.push(pred);
-    });
 
-    actualizarCostosFinancieros(OM);
+      // Soiling inmediato (ratio actual) — sin duplicar lógica de pérdida
+      if (irradiance > 50 && ctx.ratio < SOIL_RATIO) {
+        var inc = openSoilIncident(OM, inv, ctx);
+        soilN++;
+        logs.push('[SOIL] ' + inv.id + ' ratio=' + ctx.ratio + ' inc=' + inc.id +
+          ' USD=' + inc.costo_financiero_acumulado_usd);
+      }
+    }
+
+    var openCost = refreshIncidentFinance(OM);
+    var trueYield = -openCost; // yield financiero perdido (USD)
 
     var summary = {
       ok: true,
-      at: nowIso(),
+      at: iso(),
       plantId: plantId,
       source: SOURCE,
-      soiling_alerts: soilResults.filter(function (s) { return s.soiling_alert; }).length,
-      predictions_new: preds.length,
-      missions_waiting: OM.misionesRoboticas.filter(function (m) { return m.estado_mision === 'WAITING_HARDWARE'; }).length,
-      open_incident_cost_usd: OM.incidents.filter(function (i) { return !i.closed; }).reduce(function (s, i) {
-        return s + (Number(i.costo_financiero_acumulado_usd) || 0);
-      }, 0),
-      logs: logs,
-      mode: 'RULE_ENGINE_DEMO'
+      mode: MODE,
+      soiling_alerts: soilN,
+      predictions_new: predN,
+      missions_waiting: OM.misionesRoboticas.filter(function (m) {
+        return m.estado_mision === 'WAITING_HARDWARE';
+      }).length,
+      open_incident_cost_usd: +openCost.toFixed(2),
+      true_financial_yield_usd: +trueYield.toFixed(2),
+      logs: logs
     };
-
     OM._lastJarvisCycle = summary;
     return summary;
   }
 
   g.AEROVOLT_JARVIS = {
     SOURCE: SOURCE,
-    TARIFF_USD_KWH: TARIFF_USD_KWH,
-    SOIL_THRESHOLD: SOIL_THRESHOLD,
+    MODE: MODE,
+    TARIFF_USD_KWH: TARIFF,
+    SOIL_THRESHOLD: SOIL_RATIO,
     runCycle: runJarvisCycle,
-    analizarEficienciaSuciedadJarvis: function (inv, plantaId) {
-      var OM = g.AEROVOLT_OM;
-      ensureStores(OM);
-      return analizarEficienciaSuciedadJarvis(OM, inv, plantaId || 'PLT-001');
-    },
-    ensureStores: function () {
-      if (g.AEROVOLT_OM) ensureStores(g.AEROVOLT_OM);
-    }
+    linearFit: linearFit,
+    powerContext: powerContext,
+    financialFromLossKwh: financialFromLossKwh,
+    ensureStores: function () { if (g.AEROVOLT_OM) ensure(g.AEROVOLT_OM); }
   };
 })(typeof window !== 'undefined' ? window : global);
